@@ -171,35 +171,35 @@ onMounted(() => {
     </div>
     
     <div class="formats-list">
-      <div class="format-item clickable" @click="copyToClipboard(formats.timestamp, '时间戳(秒)')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.timestamp || '', '时间戳(秒)')">
         <label>时间戳 (秒)</label>
         <span>{{ formats.timestamp }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.timestampMs, '时间戳(毫秒)')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.timestampMs || '', '时间戳(毫秒)')">
         <label>时间戳 (毫秒)</label>
         <span>{{ formats.timestampMs }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.dateTime, '完整日期时间')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.dateTime || '', '完整日期时间')">
         <label>日期时间</label>
         <span>{{ formats.dateTime }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.date, '日期')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.date || '', '日期')">
         <label>日期</label>
         <span>{{ formats.date }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.time, '时间')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.time || '', '时间')">
         <label>时间</label>
         <span>{{ formats.time }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.iso, 'ISO 8601')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.iso || '', 'ISO 8601')">
         <label>ISO 8601</label>
         <span>{{ formats.iso }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.utc, 'UTC')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.utc || '', 'UTC')">
         <label>UTC</label>
         <span>{{ formats.utc }}</span>
       </div>
-      <div class="format-item clickable" @click="copyToClipboard(formats.cn, '中文格式')">
+      <div class="format-item clickable" @click="copyToClipboard(formats.cn || '', '中文格式')">
         <label>中文格式</label>
         <span>{{ formats.cn }}</span>
       </div>

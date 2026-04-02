@@ -33,7 +33,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": []
+    "targets": ["nsis", "msi"],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser"
+      }
+    }
   },
   "plugins": {
     "sql": {

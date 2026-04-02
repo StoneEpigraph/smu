@@ -7,6 +7,8 @@ const props = defineProps<{
 }>()
 
 const expression = ref('')
+const result = ref('')
+const inputRef = ref<HTMLInputElement | null>(null)
 let db: any = null
 
 const buttons = [

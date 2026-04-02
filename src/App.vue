@@ -20,6 +20,7 @@ interface Plugin {
   icon: string
   keywords: string[]
   component: any
+  category?: string
 }
 
 const plugins: Plugin[] = [
