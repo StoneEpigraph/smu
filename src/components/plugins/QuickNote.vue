@@ -20,9 +20,9 @@ let db: any = null
 const loadNotes = async () => {
   if (!db) return
   try {
-    const result = await db.select<Note[]>(
+    const result = await db.select(
       'SELECT * FROM quick_notes ORDER BY created_at DESC LIMIT 10'
-    )
+    ) as Note[]
     notes.value = result
   } catch (e) {
     console.log('Load notes failed:', e)

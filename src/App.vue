@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
 import Calculator from './components/plugins/Calculator.vue'
@@ -63,6 +64,27 @@ const plugins: Plugin[] = [
 const searchQuery = ref('')
 const selectedPlugin = ref<Plugin | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const lastEscTime = ref(0)
+
+const handleKeydown = async (e: KeyboardEvent) => {
+  // Ctrl + Q 退出
+  if (e.ctrlKey && e.key === 'q') {
+    e.preventDefault()
+    await invoke('exit_app')
+    return
+  }
+  
+  // 连续两次 Esc 退出
+  if (e.key === 'Escape') {
+    const now = Date.now()
+    if (now - lastEscTime.value < 500) {
+      e.preventDefault()
+      await invoke('exit_app')
+    } else {
+      lastEscTime.value = now
+    }
+  }
+}
 
 const filteredPlugins = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -88,12 +110,16 @@ const handleBack = () => {
 }
 
 onMounted(() => {
-  searchInputRef.value?.focus()
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container" @keydown="handleKeydown" tabindex="-1">
     <div class="main-window">
       <div v-if="!selectedPlugin" class="search-section">
         <SearchBar 

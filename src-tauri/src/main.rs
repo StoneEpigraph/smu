@@ -68,6 +68,11 @@ fn decode_hex(input: &str) -> Result<String, String> {
         .and_then(|bytes| String::from_utf8(bytes).map_err(|e| e.to_string()))
 }
 
+#[tauri::command]
+fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::new().build())
@@ -81,7 +86,8 @@ fn main() {
             encode_url,
             decode_url,
             encode_hex,
-            decode_hex
+            decode_hex,
+            exit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

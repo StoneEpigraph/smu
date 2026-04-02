@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "SMU-KRunner",
+  "productName": "SMU",
   "version": "1.0.0",
-  "identifier": "com.smu.krunner",
+  "identifier": "cn.stonemind.smu",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3535",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "SMU KRunner",
+        "title": "SMU",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -29,14 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
+    "targets": []
   },
   "plugins": {
     "sql": {
