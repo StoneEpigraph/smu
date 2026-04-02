@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import Database from '@tauri-apps/plugin-sql'
+import { invoke } from '@tauri-apps/api/core'
 
 interface Note {
   id: number
@@ -15,58 +15,47 @@ const props = defineProps<{
 const inputRef = ref<HTMLTextAreaElement | null>(null)
 const notes = ref<Note[]>([])
 const newNote = ref('')
-let db: any = null
+const errorMsg = ref('')
+const successMsg = ref('')
 
 const loadNotes = async () => {
-  if (!db) return
   try {
-    const result = await db.select(
-      'SELECT * FROM quick_notes ORDER BY created_at DESC LIMIT 10'
-    ) as Note[]
-    notes.value = result
-  } catch (e) {
-    console.log('Load notes failed:', e)
+    const result = await invoke<[number, string, string][]>('get_notes')
+    notes.value = result.map(([id, content, created_at]) => ({ id, content, created_at }))
+  } catch (e: any) {
+    console.error('Load notes failed:', e)
+    errorMsg.value = `加载失败: ${e}`
   }
 }
 
 const addNote = async () => {
-  if (!newNote.value.trim() || !db) return
+  if (!newNote.value.trim()) {
+    errorMsg.value = '笔记内容不能为空'
+    return
+  }
   try {
-    await db.execute(
-      'INSERT INTO quick_notes (content) VALUES (?)',
-      [newNote.value]
-    )
+    await invoke('add_note', { content: newNote.value })
     newNote.value = ''
+    successMsg.value = '笔记保存成功'
     await loadNotes()
-  } catch (e) {
-    console.log('Add note failed:', e)
+  } catch (e: any) {
+    console.error('Add note failed:', e)
+    errorMsg.value = `保存失败: ${e}`
   }
 }
 
 const deleteNote = async (id: number) => {
-  if (!db) return
   try {
-    await db.execute('DELETE FROM quick_notes WHERE id = ?', [id])
+    await invoke('delete_note', { id })
     await loadNotes()
-  } catch (e) {
-    console.log('Delete note failed:', e)
+  } catch (e: any) {
+    console.error('Delete note failed:', e)
+    errorMsg.value = `删除失败: ${e}`
   }
 }
 
 onMounted(async () => {
-  try {
-    db = await Database.load('sqlite:krunner.db')
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS quick_notes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        content TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `)
-    await loadNotes()
-  } catch (e) {
-    console.log('Database init failed:', e)
-  }
+  await loadNotes()
   
   if (props.initialInput) {
     newNote.value = props.initialInput
@@ -83,11 +72,14 @@ onMounted(async () => {
       <textarea
         ref="inputRef"
         v-model="newNote"
-        placeholder="写下你的笔记..."
+        placeholder="写下你的笔记... (Ctrl+Enter 保存)"
         @keydown.ctrl.enter="addNote"
       ></textarea>
       <button @click="addNote">添加笔记</button>
     </div>
+    
+    <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
+    <div v-if="successMsg" class="success-msg">{{ successMsg }}</div>
     
     <div class="notes-list">
       <div v-for="note in notes" :key="note.id" class="note-item">
@@ -119,33 +111,51 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.input-section textarea {
-  background: rgba(255, 255, 255, 0.1);
+textarea {
+  width: 100%;
+  height: 80px;
+  padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
   font-size: 14px;
   resize: none;
-  height: 80px;
+}
+
+textarea:focus {
   outline: none;
+  border-color: #4CAF50;
 }
 
-.input-section textarea:focus {
-  border-color: rgba(100, 150, 255, 0.5);
-}
-
-.input-section button {
-  background: rgba(100, 150, 255, 0.3);
+button {
+  padding: 10px 20px;
+  background: #4CAF50;
+  color: white;
   border: none;
   border-radius: 8px;
-  padding: 10px;
-  color: #fff;
   cursor: pointer;
+  font-size: 14px;
 }
 
-.input-section button:hover {
-  background: rgba(100, 150, 255, 0.5);
+button:hover {
+  opacity: 0.8;
+}
+
+.error-msg {
+  padding: 10px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.success-msg {
+  padding: 10px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 .notes-list {
@@ -155,14 +165,15 @@ onMounted(async () => {
 
 .note-item {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .note-content {
   color: #fff;
   font-size: 14px;
+  margin-bottom: 8px;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -171,24 +182,21 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
 }
 
 .note-time {
   color: rgba(255, 255, 255, 0.4);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .delete-btn {
   background: transparent;
-  border: none;
-  cursor: pointer;
-  opacity: 0.5;
-  padding: 4px;
+  padding: 4px 8px;
+  font-size: 16px;
 }
 
 .delete-btn:hover {
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .no-notes {
