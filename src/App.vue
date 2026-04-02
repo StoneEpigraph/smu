@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { invoke } from '@tauri-apps/api/core'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
+import Database from '@tauri-apps/plugin-sql'
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
 import Calculator from './components/plugins/Calculator.vue'
@@ -74,6 +76,27 @@ const plugins: Plugin[] = [
 const searchQuery = ref('')
 const selectedPlugin = ref<Plugin | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const useCount = ref<Record<string, number>>({})
+
+const loadUseCount = async () => {
+  try {
+    const counts = await invoke<[string, number][]>('get_use_counts')
+    counts.forEach(([id, count]) => {
+      useCount.value[id] = count
+    })
+  } catch (e) {
+    console.log('Load use count failed:', e)
+  }
+}
+
+const incrementUseCount = async (pluginId: string) => {
+  try {
+    await invoke('increment_use_count', { pluginId })
+    useCount.value[pluginId] = (useCount.value[pluginId] || 0) + 1
+  } catch (e) {
+    console.log('Increment use count failed:', e)
+  }
+}
 
 const handleKeydown = async (e: KeyboardEvent) => {
   const win = getCurrentWindow()
@@ -93,19 +116,32 @@ const handleKeydown = async (e: KeyboardEvent) => {
 }
 
 const filteredPlugins = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return plugins
+  let result = [...plugins]
+  
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(plugin => {
+      if (plugin.name.toLowerCase().includes(query)) return true
+      if (plugin.nameZh.includes(query)) return true
+      return plugin.keywords.some(kw => kw.toLowerCase().includes(query))
+    })
   }
-  const query = searchQuery.value.toLowerCase()
-  return plugins.filter(plugin => {
-    if (plugin.name.toLowerCase().includes(query)) return true
-    if (plugin.nameZh.includes(query)) return true
-    return plugin.keywords.some(kw => kw.toLowerCase().includes(query))
+  
+  result.sort((a, b) => {
+    const countA = useCount.value[a.id] || 0
+    const countB = useCount.value[b.id] || 0
+    return countB - countA
   })
+  
+  return result.map(plugin => ({
+    ...plugin,
+    useCount: useCount.value[plugin.id] || 0
+  }))
 })
 
-const handleSelectPlugin = (plugin: Plugin) => {
+const handleSelectPlugin = async (plugin: Plugin) => {
   selectedPlugin.value = plugin
+  await incrementUseCount(plugin.id)
 }
 
 const handleBack = () => {
@@ -117,6 +153,8 @@ const handleBack = () => {
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
+  
+  await loadUseCount()
   
   try {
     await register('Super+S', async () => {

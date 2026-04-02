@@ -17,10 +17,13 @@ const emit = defineEmits<{
       @click="emit('select', plugin)"
     >
       <span class="plugin-icon">{{ plugin.icon }}</span>
-      <div class="plugin-info">
-        <div class="plugin-name">{{ plugin.nameZh }}</div>
-        <div class="plugin-keywords">{{ plugin.keywords.slice(0, 4).join(', ') }}</div>
-      </div>
+<div class="plugin-info">
+  <div class="plugin-name">{{ plugin.nameZh }}</div>
+  <div class="plugin-keywords">
+    <span class="kw-text">{{ plugin.keywords.slice(0, 4).join(', ') }}</span>
+    <span v-if="plugin.useCount > 0" class="use-count">🔥 {{ plugin.useCount }}</span>
+  </div>
+</div>
     </div>
     <div v-if="plugins.length === 0" class="no-result">
       未找到相关工具
@@ -72,11 +75,26 @@ const emit = defineEmits<{
 .plugin-keywords {
   color: rgba(255, 255, 255, 0.4);
   font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kw-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .no-result {
   text-align: center;
   color: rgba(255, 255, 255, 0.4);
   padding: 40px;
+}
+.use-count {
+  color: #ff6b6b;
+  font-size: 11px;
+  margin-left: 8px;
 }
 </style>

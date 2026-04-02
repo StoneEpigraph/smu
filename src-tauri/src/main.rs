@@ -78,6 +78,51 @@ fn exit_app(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+#[tauri::command]
+async fn increment_use_count(plugin_id: String, app: tauri::AppHandle) -> Result<(), String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+    let db_path = app_dir.join("smu.db");
+    
+    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS plugin_use_count (
+            plugin_id TEXT PRIMARY KEY,
+            use_count INTEGER DEFAULT 0
+        )",
+        [],
+    ).map_err(|e| e.to_string())?;
+    
+    conn.execute(
+        "INSERT INTO plugin_use_count (plugin_id, use_count) VALUES (?, 1)
+         ON CONFLICT(plugin_id) DO UPDATE SET use_count = use_count + 1",
+        [&plugin_id],
+    ).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_use_counts(app: tauri::AppHandle) -> Result<Vec<(String, i64)>, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let db_path = app_dir.join("smu.db");
+    
+    let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT plugin_id, use_count FROM plugin_use_count")
+        .map_err(|e| e.to_string())?;
+    
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+    }).map_err(|e| e.to_string())?;
+    
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| e.to_string())?);
+    }
+    
+    Ok(result)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::new().build())
@@ -93,7 +138,9 @@ fn main() {
             decode_url,
             encode_hex,
             decode_hex,
-            exit_app
+            exit_app,
+            increment_use_count,
+            get_use_counts
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;
