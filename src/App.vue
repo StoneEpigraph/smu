@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
 import Calculator from './components/plugins/Calculator.vue'
@@ -64,25 +65,21 @@ const plugins: Plugin[] = [
 const searchQuery = ref('')
 const selectedPlugin = ref<Plugin | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
-const lastEscTime = ref(0)
 
 const handleKeydown = async (e: KeyboardEvent) => {
-  // Ctrl + Q 退出
+  const win = getCurrentWindow()
+  
+  // Ctrl + Q 隐藏窗口
   if (e.ctrlKey && e.key === 'q') {
     e.preventDefault()
-    await invoke('exit_app')
+    await win.hide()
     return
   }
   
-  // 连续两次 Esc 退出
+  // 单次 Esc 或连续两次 Esc 都隐藏
   if (e.key === 'Escape') {
-    const now = Date.now()
-    if (now - lastEscTime.value < 500) {
-      e.preventDefault()
-      await invoke('exit_app')
-    } else {
-      lastEscTime.value = now
-    }
+    e.preventDefault()
+    await win.hide()
   }
 }
 
@@ -109,12 +106,33 @@ const handleBack = () => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
+  
+  try {
+    await register('Super+S', async () => {
+      const win = getCurrentWindow()
+      const isVisible = await win.isVisible()
+      if (isVisible) {
+        await win.hide()
+      } else {
+        await win.show()
+        await win.setFocus()
+        searchInputRef.value?.focus()
+      }
+    })
+  } catch (e) {
+    console.log('Failed to register shortcut:', e)
+  }
 })
 
-onUnmounted(() => {
+onUnmounted(async () => {
   document.removeEventListener('keydown', handleKeydown)
+  try {
+    await unregister('Super+S')
+  } catch (e) {
+    console.log('Failed to unregister shortcut:', e)
+  }
 })
 </script>
 
