@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
-import Database from '@tauri-apps/plugin-sql'
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
 import Calculator from './components/plugins/Calculator.vue'
@@ -12,6 +11,7 @@ import Calendar from './components/plugins/Calendar.vue'
 import QuickNote from './components/plugins/QuickNote.vue'
 import Encoder from './components/plugins/Encoder.vue'
 import IdCard from './components/plugins/IdCard.vue'
+import TimeConverter from './components/plugins/TimeConverter.vue'
 
 interface Plugin {
   id: string
@@ -70,7 +70,16 @@ const plugins: Plugin[] = [
     icon: '🎫',
     keywords: ['idcard', '身份证', '验证', '生成', 'sfz'],
     component: IdCard
-  }
+  },
+  {
+  id: 'time',
+  name: '时间转换',
+  nameZh: '时间转换',
+  icon: '⏰',
+  keywords: ['时间', 'timestamp', '时间戳', '日期'],
+  component: TimeConverter,
+  category: 'tool'
+}
 ]
 
 const searchQuery = ref('')
