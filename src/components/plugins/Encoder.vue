@@ -18,6 +18,7 @@ const inputText = ref('')
 
 const encodeTypes: EncodeType[] = [
   { id: 'md5', name: 'MD5', label: 'MD5' },
+  { id: 'md5_decode', name: 'MD5Decode', label: 'MD5解码', isDecode: true },
   { id: 'sha1', name: 'SHA1', label: 'SHA-1' },
   { id: 'sha256', name: 'SHA256', label: 'SHA-256' },
   { id: 'sha512', name: 'SHA512', label: 'SHA-512' },
@@ -85,6 +86,10 @@ const computeResults = async () => {
       switch (type) {
         case 'md5':
           value = await invoke<string>('encode_md5', { input: text })
+          break
+        case 'md5_decode':
+          const md5Result = await invoke<string | null>('decode_md5', { hash: text })
+          value = md5Result || '未找到对应明文'
           break
         case 'sha1':
           value = await invoke<string>('encode_sha1', { input: text })
