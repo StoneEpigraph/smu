@@ -9,6 +9,7 @@ import ColorPicker from './components/plugins/ColorPicker.vue'
 import Calendar from './components/plugins/Calendar.vue'
 import QuickNote from './components/plugins/QuickNote.vue'
 import Encoder from './components/plugins/Encoder.vue'
+import IdCard from './components/plugins/IdCard.vue'
 
 interface Plugin {
   id: string
@@ -59,6 +60,14 @@ const plugins: Plugin[] = [
     icon: '🔐',
     keywords: ['encode', '编码', 'md5', 'base64', 'sha', 'url', 'unicode', 'hex'],
     component: Encoder
+  },
+  {
+    id: 'idcard',
+    name: 'IdCard',
+    nameZh: '身份证工具',
+    icon: '🎫',
+    keywords: ['idcard', '身份证', '验证', '生成', 'sfz'],
+    component: IdCard
   }
 ]
 
