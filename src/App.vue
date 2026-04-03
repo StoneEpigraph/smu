@@ -85,6 +85,7 @@ const searchQuery = ref('')
 const selectedPlugin = ref<Plugin | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const useCount = ref<Record<string, number>>({})
+const selectedIndex = ref(0)
 
 const loadUseCount = async () => {
   try {
@@ -147,9 +148,32 @@ const filteredPlugins = computed(() => {
   }))
 })
 
-const handleSelectPlugin = async (plugin: Plugin) => {
-  selectedPlugin.value = plugin
-  await incrementUseCount(plugin.id)
+const handleSelectPlugin = async (plugin: Plugin | null) => {
+  if (plugin) {
+    selectedPlugin.value = plugin
+    await incrementUseCount(plugin.id)
+  } else if (filteredPlugins.value.length > 0) {
+    // 直接回车，选择第一个插件
+    const firstPlugin = filteredPlugins.value[0]
+    selectedPlugin.value = firstPlugin
+    await incrementUseCount(firstPlugin.id)
+  }
+}
+
+const handleNavigate = (direction: 'up' | 'down') => {
+  if (filteredPlugins.value.length === 0) return
+  
+  if (direction === 'down') {
+    selectedIndex.value = (selectedIndex.value + 1) % filteredPlugins.value.length
+  } else {
+    selectedIndex.value = (selectedIndex.value - 1 + filteredPlugins.value.length) % filteredPlugins.value.length
+  }
+  
+  // 聚焦到结果列表
+  const resultList = document.querySelector('.result-list')
+  if (resultList) {
+    (resultList as HTMLElement).focus()
+  }
 }
 
 const handleBack = () => {
@@ -199,9 +223,12 @@ onUnmounted(async () => {
           v-model="searchQuery" 
           ref="searchInputRef"
           @select="handleSelectPlugin"
+          @navigate="handleNavigate"
         />
         <ResultList 
           :plugins="filteredPlugins" 
+          :selectedIndex="selectedIndex"
+          @update:selectedIndex="(index) => selectedIndex.value = index"
           @select="handleSelectPlugin"
         />
       </div>
@@ -211,8 +238,7 @@ onUnmounted(async () => {
           <span class="plugin-title">{{ selectedPlugin.icon }} {{ selectedPlugin.nameZh }}</span>
         </div>
         <component 
-          :is="selectedPlugin.component" 
-          :initialInput="searchQuery"
+          :is="selectedPlugin.component"
         />
       </div>
     </div>

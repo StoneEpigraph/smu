@@ -1,29 +1,79 @@
 <script setup lang="ts">
-defineProps<{
+import { ref, watch, nextTick } from 'vue'
+
+const props = defineProps<{
   plugins: any[]
+  selectedIndex?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'select', plugin: any): void
+  (e: 'update:selectedIndex', index: number): void
 }>()
+
+const selectedIndex = ref(props.selectedIndex || 0)
+
+// 监听插件列表变化，重置选中索引
+watch(() => props.plugins, () => {
+  selectedIndex.value = 0
+}, { deep: true })
+
+// 监听外部传入的选中索引变化
+watch(() => props.selectedIndex, (newIndex) => {
+  if (newIndex !== undefined) {
+    selectedIndex.value = newIndex
+  }
+})
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    selectedIndex.value = (selectedIndex.value + 1) % props.plugins.length
+    emit('update:selectedIndex', selectedIndex.value)
+    scrollToSelected()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    selectedIndex.value = (selectedIndex.value - 1 + props.plugins.length) % props.plugins.length
+    emit('update:selectedIndex', selectedIndex.value)
+    scrollToSelected()
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (props.plugins[selectedIndex.value]) {
+      emit('select', props.plugins[selectedIndex.value])
+    }
+  }
+}
+
+const scrollToSelected = async () => {
+  await nextTick()
+  const selectedElement = document.querySelector('.result-item.selected')
+  if (selectedElement) {
+    selectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+const handleItemClick = (plugin: any) => {
+  emit('select', plugin)
+}
 </script>
 
 <template>
-  <div class="result-list">
+  <div class="result-list" @keydown="handleKeydown" tabindex="0">
     <div 
-      v-for="plugin in plugins" 
+      v-for="(plugin, index) in plugins" 
       :key="plugin.id"
-      class="result-item"
-      @click="emit('select', plugin)"
+      :class="['result-item', { selected: index === selectedIndex }]"
+      @click="handleItemClick(plugin)"
+      :tabindex="index"
     >
       <span class="plugin-icon">{{ plugin.icon }}</span>
-<div class="plugin-info">
-  <div class="plugin-name">{{ plugin.nameZh }}</div>
-  <div class="plugin-keywords">
-    <span class="kw-text">{{ plugin.keywords.slice(0, 4).join(', ') }}</span>
-    <span v-if="plugin.useCount > 0" class="use-count">🔥 {{ plugin.useCount }}</span>
-  </div>
-</div>
+      <div class="plugin-info">
+        <div class="plugin-name">{{ plugin.nameZh }}</div>
+        <div class="plugin-keywords">
+          <span class="kw-text">{{ plugin.keywords.slice(0, 4).join(', ') }}</span>
+          <span v-if="plugin.useCount > 0" class="use-count">🔥 {{ plugin.useCount }}</span>
+        </div>
+      </div>
     </div>
     <div v-if="plugins.length === 0" class="no-result">
       未找到相关工具
@@ -54,6 +104,16 @@ const emit = defineEmits<{
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(100, 150, 255, 0.3);
   transform: translateX(4px);
+}
+
+.result-item.selected {
+  background: rgba(100, 150, 255, 0.2);
+  border-color: rgba(100, 150, 255, 0.5);
+  transform: translateX(4px);
+}
+
+.result-list:focus {
+  outline: none;
 }
 
 .plugin-icon {

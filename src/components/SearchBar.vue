@@ -8,6 +8,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'select', plugin: any): void
+  (e: 'navigate', direction: 'up' | 'down'): void
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -20,6 +21,17 @@ const handleInput = (e: Event) => {
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     emit('update:modelValue', '')
+  } else if (e.key === 'Enter') {
+    // 触发选择第一个插件的事件
+    emit('select', null)
+  } else if (e.key === 'ArrowDown') {
+    // 向下导航到结果列表
+    e.preventDefault()
+    emit('navigate', 'down')
+  } else if (e.key === 'ArrowUp') {
+    // 向上导航到结果列表
+    e.preventDefault()
+    emit('navigate', 'up')
   }
 }
 
@@ -37,6 +49,7 @@ defineExpose({
       :value="modelValue"
       @input="handleInput"
       @keydown="handleKeydown"
+      @keydown.enter="emit('select', null)"
       placeholder="搜索工具... (计算器, 日历, 笔记, 取色器)"
       class="search-input"
       autofocus

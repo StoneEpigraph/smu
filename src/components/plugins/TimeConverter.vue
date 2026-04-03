@@ -71,21 +71,32 @@ const selectedMinute = ref(0)
 const selectedSecond = ref(0)
 const formats = ref({
   timestamp: '',
+  timestampSec: '',
   dateTime: '',
+  dateDash: '',
+  dateSlash: '',
+  time: '',
   iso: '',
   utc: '',
-  chinese: ''
+  chinese: '',
+  currentTime: ''
 })
 
 const updateDate = () => {
   const date = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value, selectedSecond.value, 0)
+  const now = new Date()
   
   formats.value = {
     timestamp: date.getTime().toString(),
+    timestampSec: Math.floor(date.getTime() / 1000).toString(),
     dateTime: date.toLocaleString('zh-CN'),
+    dateDash: date.toISOString().split('T')[0],
+    dateSlash: `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`,
+    time: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`,
     iso: date.toISOString(),
     utc: date.toUTCString(),
-    chinese: formatChineseDate(date)
+    chinese: formatChineseDate(date),
+    currentTime: now.toLocaleString('zh-CN')
   }
 }
 
@@ -124,11 +135,16 @@ const formatChineseDate = (date: Date) => {
 
 const getLabel = (key: string) => {
   const labels: Record<string, string> = {
-    timestamp: '时间戳',
+    timestamp: '时间戳(毫秒)',
+    timestampSec: '时间戳(秒)',
     dateTime: '日期时间',
+    dateDash: '日期(-)',
+    dateSlash: '日期(/)',
+    time: '时间',
     iso: 'ISO 8601',
     utc: 'UTC时间',
-    chinese: '中文格式'
+    chinese: '中文格式',
+    currentTime: '当前时间'
   }
   return labels[key] || key
 }
