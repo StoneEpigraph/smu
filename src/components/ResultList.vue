@@ -27,13 +27,7 @@ watch(() => props.selectedIndex, (newIndex) => {
 
 
 
-const scrollToSelected = async () => {
-  await nextTick()
-  const selectedElement = document.querySelector('.result-item.selected')
-  if (selectedElement) {
-    selectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-}
+
 
 const handleItemClick = (plugin: any) => {
   emit('select', plugin)
