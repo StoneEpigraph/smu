@@ -12,6 +12,7 @@ import QuickNote from './components/plugins/QuickNote.vue'
 import Encoder from './components/plugins/Encoder.vue'
 import IdCard from './components/plugins/IdCard.vue'
 import TimeConverter from './components/plugins/TimeConverter.vue'
+import JsonFormatter from './components/plugins/JsonFormatter.vue'
 
 interface Plugin {
   id: string
@@ -78,6 +79,14 @@ const plugins: Plugin[] = [
     icon: '⏰',
     keywords: ['时间', 'timestamp', '时间戳', '日期'],
     component: TimeConverter
+  },
+  {
+    id: 'jsonformatter',
+    name: 'JSON Formatter',
+    nameZh: 'JSON格式化',
+    icon: '📝',
+    keywords: ['json', '格式化', 'format', 'parse'],
+    component: JsonFormatter
   }
 ]
 
