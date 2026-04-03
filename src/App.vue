@@ -20,7 +20,6 @@ interface Plugin {
   icon: string
   keywords: string[]
   component: any
-  category?: string
 }
 
 const plugins: Plugin[] = [
@@ -73,14 +72,13 @@ const plugins: Plugin[] = [
     component: IdCard
   },
   {
-  id: 'time',
-  name: '时间转换',
-  nameZh: '时间转换',
-  icon: '⏰',
-  keywords: ['时间', 'timestamp', '时间戳', '日期'],
-  component: TimeConverter,
-  category: 'tool'
-}
+    id: 'time',
+    name: 'TimeConverter',
+    nameZh: '时间转换',
+    icon: '⏰',
+    keywords: ['时间', 'timestamp', '时间戳', '日期'],
+    component: TimeConverter
+  }
 ]
 
 const searchQuery = ref('')
