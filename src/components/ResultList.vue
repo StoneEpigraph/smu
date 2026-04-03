@@ -25,24 +25,7 @@ watch(() => props.selectedIndex, (newIndex) => {
   }
 })
 
-const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'ArrowDown') {
-    e.preventDefault()
-    selectedIndex.value = (selectedIndex.value + 1) % props.plugins.length
-    emit('update:selectedIndex', selectedIndex.value)
-    scrollToSelected()
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault()
-    selectedIndex.value = (selectedIndex.value - 1 + props.plugins.length) % props.plugins.length
-    emit('update:selectedIndex', selectedIndex.value)
-    scrollToSelected()
-  } else if (e.key === 'Enter') {
-    e.preventDefault()
-    if (props.plugins[selectedIndex.value]) {
-      emit('select', props.plugins[selectedIndex.value])
-    }
-  }
-}
+
 
 const scrollToSelected = async () => {
   await nextTick()
@@ -58,13 +41,13 @@ const handleItemClick = (plugin: any) => {
 </script>
 
 <template>
-  <div class="result-list" @keydown="handleKeydown" tabindex="0">
+  <div class="result-list">
     <div 
       v-for="(plugin, index) in plugins" 
       :key="plugin.id"
       :class="['result-item', { selected: index === selectedIndex }]"
       @click="handleItemClick(plugin)"
-      :tabindex="index"
+
     >
       <span class="plugin-icon">{{ plugin.icon }}</span>
       <div class="plugin-info">
@@ -112,9 +95,7 @@ const handleItemClick = (plugin: any) => {
   transform: translateX(4px);
 }
 
-.result-list:focus {
-  outline: none;
-}
+
 
 .plugin-icon {
   font-size: 28px;

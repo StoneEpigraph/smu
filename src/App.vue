@@ -117,6 +117,13 @@ const handleKeydown = async (e: KeyboardEvent) => {
     return
   }
   
+  // Alt + P 返回
+  if (e.altKey && e.key === 'p') {
+    e.preventDefault()
+    handleBack()
+    return
+  }
+  
   // 单次 Esc 或连续两次 Esc 都隐藏
   if (e.key === 'Escape') {
     e.preventDefault()
@@ -153,10 +160,10 @@ const handleSelectPlugin = async (plugin: Plugin | null) => {
     selectedPlugin.value = plugin
     await incrementUseCount(plugin.id)
   } else if (filteredPlugins.value.length > 0) {
-    // 直接回车，选择第一个插件
-    const firstPlugin = filteredPlugins.value[0]
-    selectedPlugin.value = firstPlugin
-    await incrementUseCount(firstPlugin.id)
+    // 直接回车，选择当前选中的插件
+    const selectedPluginItem = filteredPlugins.value[selectedIndex.value]
+    selectedPlugin.value = selectedPluginItem
+    await incrementUseCount(selectedPluginItem.id)
   }
 }
 
@@ -169,11 +176,8 @@ const handleNavigate = (direction: 'up' | 'down') => {
     selectedIndex.value = (selectedIndex.value - 1 + filteredPlugins.value.length) % filteredPlugins.value.length
   }
   
-  // 聚焦到结果列表
-  const resultList = document.querySelector('.result-list')
-  if (resultList) {
-    (resultList as HTMLElement).focus()
-  }
+  // 保持焦点在输入框
+  searchInputRef.value?.focus()
 }
 
 const handleBack = () => {
