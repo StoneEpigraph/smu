@@ -228,7 +228,7 @@ onUnmounted(async () => {
         <ResultList 
           :plugins="filteredPlugins" 
           :selectedIndex="selectedIndex"
-          @update:selectedIndex="(index) => selectedIndex.value = index"
+          @update:selectedIndex="(index) => selectedIndex = index"
           @select="handleSelectPlugin"
         />
       </div>

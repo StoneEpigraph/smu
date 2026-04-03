@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 
 export const useInvoke = () => {
   const incrementUseCount = async (toolName: string) => {
