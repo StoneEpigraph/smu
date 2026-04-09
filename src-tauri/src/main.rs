@@ -26,6 +26,7 @@ fn main() {
             commands::encode_hex,
             commands::decode_hex,
             commands::exit_app,
+            commands::get_app_version,
             commands::add_note,
             commands::get_notes,
             commands::delete_note,

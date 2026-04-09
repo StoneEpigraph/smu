@@ -95,6 +95,7 @@ const selectedPlugin = ref<Plugin | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const useCount = ref<Record<string, number>>({})
 const selectedIndex = ref(0)
+const appVersion = ref('1.0.0')
 
 const loadUseCount = async () => {
   try {
@@ -104,6 +105,15 @@ const loadUseCount = async () => {
     })
   } catch (e) {
     console.log('Load use count failed:', e)
+  }
+}
+
+const loadAppVersion = async () => {
+  try {
+    const version = await invoke<string>('get_app_version')
+    appVersion.value = version
+  } catch (e) {
+    console.log('Load app version failed:', e)
   }
 }
 
@@ -200,6 +210,7 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
 
   await loadUseCount()
+  await loadAppVersion()
 
   try {
     await register('Super+S', async () => {
@@ -242,6 +253,10 @@ onUnmounted(async () => {
           <span class="plugin-title">{{ selectedPlugin.icon }} {{ selectedPlugin.nameZh }}</span>
         </div>
         <component :is="selectedPlugin.component" />
+      </div>
+      <div class="footer">
+        <span class="copyright">© 2025 StoneMind. All rights reserved.</span>
+        <span class="version">Version {{ appVersion }}</span>
       </div>
     </div>
   </div>
@@ -329,5 +344,25 @@ body {
   color: #fff;
   font-size: 16px;
   font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.copyright {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.version {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
 }
 </style>
