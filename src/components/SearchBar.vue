@@ -9,6 +9,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'select', plugin: any): void
   (e: 'navigate', direction: 'up' | 'down'): void
+  (e: 'openSettings'): void
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -43,18 +44,10 @@ defineExpose({
 <template>
   <div class="search-bar">
     <span class="search-icon">🔍</span>
-    <input
-      ref="inputRef"
-      type="text"
-      :value="modelValue"
-      @input="handleInput"
-      @keydown="handleKeydown"
-      @keydown.enter="emit('select', null)"
-      placeholder="搜索工具... (计算器, 日历, 笔记, 取色器)"
-      class="search-input"
-      autofocus
-    />
+    <input ref="inputRef" type="text" :value="modelValue" @input="handleInput" @keydown="handleKeydown"
+      @keydown.enter="emit('select', null)" placeholder="搜索工具... (计算器, 日历, 笔记, 取色器)" class="search-input" autofocus />
     <span v-if="modelValue" class="clear-btn" @click="emit('update:modelValue', '')">✕</span>
+    <span class="settings-btn" @click="emit('openSettings')">⚙️</span>
   </div>
 </template>
 
@@ -102,5 +95,19 @@ defineExpose({
 
 .clear-btn:hover {
   opacity: 1;
+}
+
+.settings-btn {
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 4px;
+  font-size: 16px;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  opacity: 1;
+  transform: rotate(90deg);
 }
 </style>

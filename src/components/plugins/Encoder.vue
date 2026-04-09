@@ -11,6 +11,7 @@ interface EncodeType {
 
 const props = defineProps<{
   initialInput?: string
+  config?: any
 }>()
 
 const inputRef = ref<HTMLTextAreaElement | null>(null)
@@ -49,6 +50,19 @@ const toggleType = (id: string) => {
 
 const isSelected = (id: string) => selectedTypes.value.includes(id)
 
+const initializeConfig = () => {
+  if (props.config) {
+    if (props.config.enabledTypes && Array.isArray(props.config.enabledTypes)) {
+      selectedTypes.value = [...props.config.enabledTypes]
+    }
+    if (props.config.defaultEncodeType) {
+      if (!selectedTypes.value.includes(props.config.defaultEncodeType)) {
+        selectedTypes.value.push(props.config.defaultEncodeType)
+      }
+    }
+  }
+}
+
 const rot13 = (text: string): string => {
   return text.replace(/[a-zA-Z]/g, c => {
     const base = c <= 'Z' ? 65 : 97
@@ -73,7 +87,7 @@ const unicodeEncode = (text: string): string => {
 const computeResults = async () => {
   results.value = []
   const text = inputText.value
-  
+
   if (!text || selectedTypes.value.length === 0) {
     return
   }
@@ -131,10 +145,10 @@ const computeResults = async () => {
       const typeInfo = encodeTypes.find(t => t.id === type)
       results.value.push({ id: type, label: typeInfo?.label || type, value })
     } catch (e: any) {
-      results.value.push({ 
-        id: type, 
-        label: encodeTypes.find(t => t.id === type)?.label || type, 
-        value: 'Error: ' + (e.toString() || '未知错误') 
+      results.value.push({
+        id: type,
+        label: encodeTypes.find(t => t.id === type)?.label || type,
+        value: 'Error: ' + (e.toString() || '未知错误')
       })
     }
   }
@@ -161,7 +175,13 @@ watch(inputText, () => {
   computeResults()
 })
 
+watch(() => props.config, () => {
+  initializeConfig()
+  computeResults()
+}, { deep: true })
+
 onMounted(async () => {
+  initializeConfig()
   if (props.initialInput) {
     inputText.value = props.initialInput
   }
@@ -176,37 +196,20 @@ onMounted(async () => {
 <template>
   <div class="encoder">
     <div class="input-section">
-      <textarea
-        ref="inputRef"
-        v-model="inputText"
-        placeholder="输入要编码/解码的内容..."
-        class="input-textarea"
-      ></textarea>
+      <textarea ref="inputRef" v-model="inputText" placeholder="输入要编码/解码的内容..." class="input-textarea"></textarea>
     </div>
-    
+
     <div class="types-section">
       <div class="types-grid">
-        <label 
-          v-for="type in encodeTypes" 
-          :key="type.id"
-          :class="['type-item', { selected: isSelected(type.id) }]"
-        >
-          <input
-            type="checkbox"
-            :checked="isSelected(type.id)"
-            @change="toggleType(type.id)"
-          />
+        <label v-for="type in encodeTypes" :key="type.id" :class="['type-item', { selected: isSelected(type.id) }]">
+          <input type="checkbox" :checked="isSelected(type.id)" @change="toggleType(type.id)" />
           <span>{{ type.label }}</span>
         </label>
       </div>
     </div>
-    
+
     <div class="results-section">
-      <div 
-        v-for="result in results" 
-        :key="result.id" 
-        class="result-item"
-      >
+      <div v-for="result in results" :key="result.id" class="result-item">
         <div class="result-header">
           <span class="result-label">{{ result.label }}</span>
           <button class="copy-btn" @click="copyResult(result.value)">📋 复制</button>

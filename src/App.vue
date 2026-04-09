@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
+import Settings from './components/Settings.vue'
 import Calculator from './components/plugins/Calculator.vue'
 import ColorPicker from './components/plugins/ColorPicker.vue'
 import Calendar from './components/plugins/Calendar.vue'
@@ -96,6 +97,8 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const useCount = ref<Record<string, number>>({})
 const selectedIndex = ref(0)
 const appVersion = ref('1.0.0')
+const showSettings = ref(false)
+const appSettings = ref<any>(null)
 
 const loadUseCount = async () => {
   try {
@@ -114,6 +117,46 @@ const loadAppVersion = async () => {
     appVersion.value = version
   } catch (e) {
     console.log('Load app version failed:', e)
+  }
+}
+
+const handleOpenSettings = () => {
+  showSettings.value = true
+}
+
+const handleCloseSettings = () => {
+  showSettings.value = false
+}
+
+const handleSaveSettings = async (settings: any) => {
+  try {
+    console.log('Saving settings:', settings)
+    const settingsJson = JSON.stringify(settings)
+    console.log('Settings JSON:', settingsJson)
+    await invoke('save_settings', { settingsJson })
+    appSettings.value = settings
+    console.log('Settings saved successfully:', settings)
+    console.log('Current appSettings:', appSettings.value)
+  } catch (e) {
+    console.error('Failed to save settings:', e)
+  }
+  showSettings.value = false
+}
+
+const loadAppSettings = async () => {
+  try {
+    console.log('Loading settings...')
+    const settingsJson = await invoke<string>('load_settings')
+    console.log('Raw settings JSON:', settingsJson)
+    if (settingsJson && settingsJson !== 'null') {
+      appSettings.value = JSON.parse(settingsJson)
+      console.log('Settings loaded successfully:', appSettings.value)
+      console.log('Plugin settings:', appSettings.value?.plugins)
+    } else {
+      console.log('No settings found, using defaults')
+    }
+  } catch (e) {
+    console.log('Failed to load settings:', e)
   }
 }
 
@@ -153,6 +196,14 @@ const handleKeydown = async (e: KeyboardEvent) => {
 const filteredPlugins = computed(() => {
   let result = [...plugins]
 
+  // 过滤掉被禁用的插件
+  if (appSettings.value?.plugins) {
+    result = result.filter(plugin => {
+      const pluginSettings = appSettings.value.plugins.find((p: any) => p.id === plugin.id)
+      return pluginSettings ? pluginSettings.enabled : true
+    })
+  }
+
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(plugin => {
@@ -172,6 +223,14 @@ const filteredPlugins = computed(() => {
     ...plugin,
     useCount: useCount.value[plugin.id] || 0
   }))
+})
+
+const currentPluginConfig = computed(() => {
+  if (!selectedPlugin.value || !appSettings.value?.plugins) {
+    return null
+  }
+  const pluginSettings = appSettings.value.plugins.find((p: any) => p.id === selectedPlugin.value?.id)
+  return pluginSettings?.config || null
 })
 
 const handleSelectPlugin = async (plugin: Plugin | null) => {
@@ -211,6 +270,7 @@ onMounted(async () => {
 
   await loadUseCount()
   await loadAppVersion()
+  await loadAppSettings()
 
   try {
     await register('Super+S', async () => {
@@ -243,7 +303,8 @@ onUnmounted(async () => {
   <div class="app-container" @keydown="handleKeydown" tabindex="-1">
     <div class="main-window">
       <div v-if="!selectedPlugin" class="search-section">
-        <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate" />
+        <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate"
+          @openSettings="handleOpenSettings" />
         <ResultList :plugins="filteredPlugins" :selectedIndex="selectedIndex"
           @update:selectedIndex="(index) => selectedIndex = index" @select="handleSelectPlugin" />
       </div>
@@ -252,13 +313,15 @@ onUnmounted(async () => {
           <button class="back-btn" @click="handleBack">← 返回</button>
           <span class="plugin-title">{{ selectedPlugin.icon }} {{ selectedPlugin.nameZh }}</span>
         </div>
-        <component :is="selectedPlugin.component" />
+        <component :is="selectedPlugin.component" :config="currentPluginConfig" />
       </div>
       <div class="footer">
         <span class="copyright">© 2025 StoneMind. All rights reserved.</span>
         <span class="version">Version {{ appVersion }}</span>
       </div>
     </div>
+    <Settings v-if="showSettings" :initialSettings="appSettings" @close="handleCloseSettings"
+      @saveSettings="handleSaveSettings" />
   </div>
 </template>
 

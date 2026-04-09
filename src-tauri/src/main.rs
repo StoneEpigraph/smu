@@ -27,6 +27,8 @@ fn main() {
             commands::decode_hex,
             commands::exit_app,
             commands::get_app_version,
+            commands::save_settings,
+            commands::load_settings,
             commands::add_note,
             commands::get_notes,
             commands::delete_note,
@@ -40,6 +42,16 @@ fn main() {
             let hide_item = MenuItem::with_id(app, "hide", "隐藏", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
+            
+            // 处理窗口关闭事件，隐藏窗口而不是退出应用
+            let main_window = app.get_webview_window("main").unwrap();
+            let window_clone = main_window.clone();
+            main_window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window_clone.hide();
+                }
+            });
             
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())

@@ -55,3 +55,56 @@ pub async fn get_use_counts(app: AppHandle) -> Result<Vec<(String, i64)>, String
     
     Ok(result)
 }
+
+#[tauri::command]
+pub async fn save_settings(settings_json: String, app: AppHandle) -> Result<(), String> {
+    println!("Saving settings: {}", settings_json);
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+    let db_path = app_dir.join("smu.db");
+    println!("Database path: {:?}", db_path);
+    
+    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )",
+        [],
+    ).map_err(|e| e.to_string())?;
+    
+    conn.execute(
+        "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('settings', ?)",
+        [&settings_json],
+    ).map_err(|e| e.to_string())?;
+    
+    println!("Settings saved successfully");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn load_settings(app: AppHandle) -> Result<String, String> {
+    println!("Loading settings...");
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let db_path = app_dir.join("smu.db");
+    println!("Database path: {:?}", db_path);
+    
+    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+    
+    let result: Result<String, rusqlite::Error> = conn.query_row(
+        "SELECT value FROM app_settings WHERE key = 'settings'",
+        [],
+        |row| row.get(0),
+    );
+    
+    match result {
+        Ok(settings) => {
+            println!("Settings loaded: {}", settings);
+            Ok(settings)
+        },
+        Err(e) => {
+            println!("No settings found: {}", e);
+            Ok("null".to_string())
+        },
+    }
+}
