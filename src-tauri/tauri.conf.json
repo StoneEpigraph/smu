@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "SMU",
         "width": 900,
         "height": 750,
@@ -41,7 +42,15 @@
       "icons/128x128@2x.png",
       "icons/icon.png"
     ],
-    "targets": []
+    "targets": [],
+    "linux": {
+      "deb": {
+        "desktopTemplate": ""
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   },
   "plugins": {
     "sql": {
