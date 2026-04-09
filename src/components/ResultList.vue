@@ -36,13 +36,8 @@ const handleItemClick = (plugin: any) => {
 
 <template>
   <div class="result-list">
-    <div 
-      v-for="(plugin, index) in plugins" 
-      :key="plugin.id"
-      :class="['result-item', { selected: index === selectedIndex }]"
-      @click="handleItemClick(plugin)"
-
-    >
+    <div v-for="(plugin, index) in plugins" :key="plugin.id"
+      :class="['result-item', { selected: index === selectedIndex }]" @click="handleItemClick(plugin)">
       <span class="plugin-icon">{{ plugin.icon }}</span>
       <div class="plugin-info">
         <div class="plugin-name">{{ plugin.nameZh }}</div>
@@ -61,8 +56,28 @@ const handleItemClick = (plugin: any) => {
 <style scoped>
 .result-list {
   margin-top: 16px;
-  max-height: 320px;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.result-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.result-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.result-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .result-item {
@@ -127,6 +142,7 @@ const handleItemClick = (plugin: any) => {
   color: rgba(255, 255, 255, 0.4);
   padding: 40px;
 }
+
 .use-count {
   color: #ff6b6b;
   font-size: 11px;

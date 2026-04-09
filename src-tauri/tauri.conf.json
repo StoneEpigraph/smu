@@ -15,9 +15,11 @@
         "title": "SMU",
         "width": 800,
         "height": 600,
+        "minWidth": 800,
+        "minHeight": 600,
         "resizable": true,
         "center": true,
-        "decorations": false,
+        "decorations": true,
         "transparent": true,
         "alwaysOnTop": true,
         "visible": true

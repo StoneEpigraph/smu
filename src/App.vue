@@ -118,21 +118,21 @@ const incrementUseCount = async (pluginId: string) => {
 
 const handleKeydown = async (e: KeyboardEvent) => {
   const win = getCurrentWindow()
-  
+
   // Ctrl + Q 隐藏窗口
   if (e.ctrlKey && e.key === 'q') {
     e.preventDefault()
     await win.hide()
     return
   }
-  
+
   // Alt + P 返回
   if (e.altKey && e.key === 'p') {
     e.preventDefault()
     handleBack()
     return
   }
-  
+
   // 单次 Esc 或连续两次 Esc 都隐藏
   if (e.key === 'Escape') {
     e.preventDefault()
@@ -142,7 +142,7 @@ const handleKeydown = async (e: KeyboardEvent) => {
 
 const filteredPlugins = computed(() => {
   let result = [...plugins]
-  
+
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(plugin => {
@@ -151,13 +151,13 @@ const filteredPlugins = computed(() => {
       return plugin.keywords.some(kw => kw.toLowerCase().includes(query))
     })
   }
-  
+
   result.sort((a, b) => {
     const countA = useCount.value[a.id] || 0
     const countB = useCount.value[b.id] || 0
     return countB - countA
   })
-  
+
   return result.map(plugin => ({
     ...plugin,
     useCount: useCount.value[plugin.id] || 0
@@ -178,13 +178,13 @@ const handleSelectPlugin = async (plugin: Plugin | null) => {
 
 const handleNavigate = (direction: 'up' | 'down') => {
   if (filteredPlugins.value.length === 0) return
-  
+
   if (direction === 'down') {
     selectedIndex.value = (selectedIndex.value + 1) % filteredPlugins.value.length
   } else {
     selectedIndex.value = (selectedIndex.value - 1 + filteredPlugins.value.length) % filteredPlugins.value.length
   }
-  
+
   // 保持焦点在输入框
   searchInputRef.value?.focus()
 }
@@ -198,9 +198,9 @@ const handleBack = () => {
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
-  
+
   await loadUseCount()
-  
+
   try {
     await register('Super+S', async () => {
       const win = getCurrentWindow()
@@ -232,27 +232,16 @@ onUnmounted(async () => {
   <div class="app-container" @keydown="handleKeydown" tabindex="-1">
     <div class="main-window">
       <div v-if="!selectedPlugin" class="search-section">
-        <SearchBar 
-          v-model="searchQuery" 
-          ref="searchInputRef"
-          @select="handleSelectPlugin"
-          @navigate="handleNavigate"
-        />
-        <ResultList 
-          :plugins="filteredPlugins" 
-          :selectedIndex="selectedIndex"
-          @update:selectedIndex="(index) => selectedIndex = index"
-          @select="handleSelectPlugin"
-        />
+        <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate" />
+        <ResultList :plugins="filteredPlugins" :selectedIndex="selectedIndex"
+          @update:selectedIndex="(index) => selectedIndex = index" @select="handleSelectPlugin" />
       </div>
       <div v-else class="plugin-section">
         <div class="plugin-header">
           <button class="back-btn" @click="handleBack">← 返回</button>
           <span class="plugin-title">{{ selectedPlugin.icon }} {{ selectedPlugin.nameZh }}</span>
         </div>
-        <component 
-          :is="selectedPlugin.component"
-        />
+        <component :is="selectedPlugin.component" />
       </div>
     </div>
   </div>
@@ -265,7 +254,8 @@ onUnmounted(async () => {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: transparent;
   overflow: hidden;
@@ -277,16 +267,18 @@ html, body {
   height: 100vh;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  align-items: center;
 }
 
 .main-window {
-  width: 800px;
-  height: 600px;
+  min-width: 800px;
+  min-height: 600px;
+  width: 100%;
+  height: 100%;
   background: rgba(30, 30, 35, 0.95);
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   display: flex;
@@ -297,12 +289,17 @@ html, body {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .plugin-section {
-  height: 520px;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: auto;
 }
 
 .plugin-header {
