@@ -42,15 +42,7 @@
       "icons/128x128@2x.png",
       "icons/icon.png"
     ],
-    "targets": [],
-    "linux": {
-      "deb": {
-        "desktopTemplate": ""
-      },
-      "appimage": {
-        "bundleMediaFramework": false
-      }
-    }
+    "targets": []
   },
   "plugins": {
     "sql": {

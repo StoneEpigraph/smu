@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
-import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
+// 快捷键现在由后端全局处理，前端不再需要注册
 import SearchBar from './components/SearchBar.vue'
 import ResultList from './components/ResultList.vue'
 import Settings from './components/Settings.vue'
@@ -271,31 +271,10 @@ onMounted(async () => {
   await loadUseCount()
   await loadAppVersion()
   await loadAppSettings()
-
-  try {
-    await register('Super+S', async () => {
-      const win = getCurrentWindow()
-      const isVisible = await win.isVisible()
-      if (isVisible) {
-        await win.hide()
-      } else {
-        await win.show()
-        await win.setFocus()
-        searchInputRef.value?.focus()
-      }
-    })
-  } catch (e) {
-    console.log('Failed to register shortcut:', e)
-  }
 })
 
 onUnmounted(async () => {
   document.removeEventListener('keydown', handleKeydown)
-  try {
-    await unregister('Super+S')
-  } catch (e) {
-    console.log('Failed to unregister shortcut:', e)
-  }
 })
 </script>
 
