@@ -44,6 +44,11 @@ fn main() {
             commands::get_use_counts,
             commands::format_json,
             commands::minify_json,
+            commands::generate_sm2_keypair,
+            // commands::sm2_encrypt,  // 暂时禁用，sm2 0.13.3 不支持 PKE
+            // commands::sm2_decrypt,  // 暂时禁用，sm2 0.13.3 不支持 PKE
+            commands::sm2_sign,
+            commands::sm2_verify,
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;

@@ -14,6 +14,7 @@ import Encoder from './components/plugins/Encoder.vue'
 import IdCard from './components/plugins/IdCard.vue'
 import TimeConverter from './components/plugins/TimeConverter.vue'
 import JsonFormatter from './components/plugins/JsonFormatter.vue'
+import Sm2 from './components/plugins/Sm2.vue'
 
 interface Plugin {
   id: string
@@ -88,6 +89,14 @@ const plugins: Plugin[] = [
     icon: '📝',
     keywords: ['json', '格式化', 'format', 'parse'],
     component: JsonFormatter
+  },
+  {
+    id: 'sm2',
+    name: 'SM2',
+    nameZh: 'SM2加密',
+    icon: '🔐',
+    keywords: ['sm2', '加密', '解密', '签名', '验签', '国密'],
+    component: Sm2
   }
 ]
 

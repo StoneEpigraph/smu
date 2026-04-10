@@ -31,7 +31,12 @@ const encodeTypes: EncodeType[] = [
   { id: 'html', name: 'HTML', label: 'HTML实体' },
   { id: 'hex', name: 'Hex', label: '十六进制' },
   { id: 'hex_decode', name: 'HexDecode', label: 'Hex解码', isDecode: true },
-  { id: 'rot13', name: 'ROT13', label: 'ROT13' }
+  { id: 'rot13', name: 'ROT13', label: 'ROT13' },
+  { id: 'sm2_generate', name: 'SM2Generate', label: 'SM2密钥生成' },
+  { id: 'sm2_encrypt', name: 'SM2Encrypt', label: 'SM2加密' },
+  { id: 'sm2_decrypt', name: 'SM2Decrypt', label: 'SM2解密' },
+  { id: 'sm2_sign', name: 'SM2Sign', label: 'SM2签名' },
+  { id: 'sm2_verify', name: 'SM2Verify', label: 'SM2验签' }
 ]
 
 const selectedTypes = ref<string[]>(['md5', 'base64'])
@@ -83,6 +88,10 @@ const htmlEncode = (text: string): string => {
 const unicodeEncode = (text: string): string => {
   return text.split('').map(c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')).join('')
 }
+
+// 存储 SM2 密钥对
+const sm2PrivateKey = ref('')
+const sm2PublicKey = ref('')
 
 const computeResults = async () => {
   results.value = []
@@ -140,6 +149,61 @@ const computeResults = async () => {
           break
         case 'rot13':
           value = rot13(text)
+          break
+        case 'sm2_generate':
+          const keypair = await invoke<any>('generate_sm2_keypair')
+          sm2PrivateKey.value = keypair.private_key
+          sm2PublicKey.value = keypair.public_key
+          value = `私钥: ${keypair.private_key}\n公钥: ${keypair.public_key}`
+          break
+        case 'sm2_encrypt':
+          if (!sm2PublicKey.value) {
+            value = '请先生成SM2密钥对'
+          } else {
+            value = await invoke<string>('sm2_encrypt', {
+              plaintext: text,
+              public_key: sm2PublicKey.value
+            })
+          }
+          break
+        case 'sm2_decrypt':
+          if (!sm2PrivateKey.value) {
+            value = '请先生成SM2密钥对'
+          } else {
+            value = await invoke<string>('sm2_decrypt', {
+              ciphertext: text,
+              private_key: sm2PrivateKey.value
+            })
+          }
+          break
+        case 'sm2_sign':
+          if (!sm2PrivateKey.value) {
+            value = '请先生成SM2密钥对'
+          } else {
+            value = await invoke<string>('sm2_sign', {
+              message: text,
+              private_key: sm2PrivateKey.value
+            })
+          }
+          break
+        case 'sm2_verify':
+          if (!sm2PublicKey.value) {
+            value = '请先生成SM2密钥对'
+          } else {
+            // 假设输入格式为 "消息|签名"
+            const parts = text.split('|')
+            if (parts.length !== 2) {
+              value = '格式错误，请使用 "消息|签名" 格式'
+            } else {
+              const [message, signature] = parts
+              const result = await invoke<boolean>('sm2_verify', {
+                message,
+                signature_hex: signature,
+                public_key: sm2PublicKey.value
+              })
+              value = result ? '验签成功' : '验签失败'
+            }
+          }
           break
       }
       const typeInfo = encodeTypes.find(t => t.id === type)
