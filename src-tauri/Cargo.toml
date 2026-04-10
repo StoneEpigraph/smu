@@ -34,5 +34,6 @@ urlencoding = "2.1"
 hex = "0.4"
 rusqlite = { version = "0.31", features = ["bundled"] }
 sm2 = { version = "0.13.3", features = ["dsa"] }
+smcrypto = "0.2"
 rand = "0.8"
 rand_core = "0.6"

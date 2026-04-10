@@ -9,6 +9,20 @@ const privateKey = ref('')
 const publicKey = ref('')
 const plaintext = ref('')
 const ciphertext = ref('')
+
+// 加密解密使用的密钥（可以手动输入或使用生成的）
+const encryptPublicKey = ref('')
+const decryptPrivateKey = ref('')
+
+// 加密解密模式
+const encryptMode = ref<'hex' | 'base64'>('hex')
+const decryptMode = ref<'hex' | 'base64'>('hex')
+
+// SM2 加密密文格式
+const cipherMode = ref<'c1c3c2' | 'c1c2c3' | 'asn1'>('c1c3c2')
+
+// 使用的加密库
+const cryptoLibrary = ref<'smcrypto' | 'gmssl'>('smcrypto')
 const message = ref('')
 const signature = ref('')
 const verifyResult = ref<boolean | null>(null)
@@ -51,6 +65,36 @@ const useGeneratedPublicKey = () => {
   }
 }
 
+// 使用生成的公钥（加密）
+const useGeneratedPublicKeyForEncrypt = () => {
+  if (publicKey.value) {
+    encryptPublicKey.value = publicKey.value
+  }
+}
+
+// 使用生成的私钥（解密）
+const useGeneratedPrivateKeyForDecrypt = () => {
+  if (privateKey.value) {
+    decryptPrivateKey.value = privateKey.value
+  }
+}
+
+// 使用生成的密钥对（加密/解密）
+const useGeneratedKeyPairForEncrypt = () => {
+  if (publicKey.value && privateKey.value) {
+    encryptPublicKey.value = publicKey.value
+    decryptPrivateKey.value = privateKey.value
+  }
+}
+
+// 使用生成的密钥对（签名/验证）
+const useGeneratedKeyPairForSign = () => {
+  if (publicKey.value && privateKey.value) {
+    signPrivateKey.value = privateKey.value
+    verifyPublicKey.value = publicKey.value
+  }
+}
+
 const generateKeypair = async () => {
   clearError('generate')
   loading.value.generate = true
@@ -68,8 +112,18 @@ const generateKeypair = async () => {
   }
 }
 
+const testJavaDecrypt = async () => {
+  try {
+    const result = await invoke<string>('test_java_sm2_decrypt')
+    alert(result)
+  } catch (error) {
+    console.error('测试失败:', error)
+    alert(`测试失败: ${error}`)
+  }
+}
+
 const encrypt = async () => {
-  if (!plaintext.value || !publicKey.value) {
+  if (!plaintext.value || !encryptPublicKey.value) {
     errorMessage.value.encrypt = '请输入明文和公钥'
     return
   }
@@ -80,9 +134,19 @@ const encrypt = async () => {
   try {
     const result = await invoke<string>('sm2_encrypt', {
       plaintext: plaintext.value,
-      publicKey: publicKey.value
+      publicKey: encryptPublicKey.value,
+      cipherMode: cipherMode.value,
+      useGmssl: cryptoLibrary.value === 'gmssl'
     })
-    ciphertext.value = result
+    
+    // 根据模式转换输出
+    if (encryptMode.value === 'base64') {
+      const hexBytes = hexToBytes(result)
+      ciphertext.value = bytesToBase64(hexBytes)
+    } else {
+      ciphertext.value = result
+    }
+    
     await incrementUseCount('sm2')
   } catch (error) {
     errorMessage.value.encrypt = `加密失败: ${error}`
@@ -93,7 +157,7 @@ const encrypt = async () => {
 }
 
 const decrypt = async () => {
-  if (!ciphertext.value || !privateKey.value) {
+  if (!ciphertext.value || !decryptPrivateKey.value) {
     errorMessage.value.decrypt = '请输入密文和私钥'
     return
   }
@@ -102,9 +166,25 @@ const decrypt = async () => {
   loading.value.decrypt = true
 
   try {
+    // 根据模式转换输入
+    let ciphertextRaw = ciphertext.value
+    let isBase64 = false
+    
+    if (decryptMode.value === 'base64') {
+      isBase64 = true
+    } else {
+      // Hex 模式，验证格式
+      if (!/^[0-9a-fA-F]+$/.test(ciphertext.value)) {
+        throw new Error('无效的 Hex 格式密文')
+      }
+    }
+    
     const result = await invoke<string>('sm2_decrypt', {
-      ciphertext: ciphertext.value,
-      privateKey: privateKey.value
+      ciphertext: ciphertextRaw,
+      privateKey: decryptPrivateKey.value,
+      cipherMode: cipherMode.value,
+      isBase64: isBase64,
+      useGmssl: cryptoLibrary.value === 'gmssl'
     })
     plaintext.value = result
     await incrementUseCount('sm2')
@@ -114,6 +194,36 @@ const decrypt = async () => {
   } finally {
     loading.value.decrypt = false
   }
+}
+
+// 辅助函数：hex 转 bytes
+const hexToBytes = (hex: string): number[] => {
+  const bytes: number[] = []
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.substr(i, 2), 16))
+  }
+  return bytes
+}
+
+// 辅助函数：bytes 转 hex
+const bytesToHex = (bytes: number[]): string => {
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// 辅助函数：bytes 转 base64
+const bytesToBase64 = (bytes: number[]): string => {
+  const binary = String.fromCharCode(...bytes)
+  return btoa(binary)
+}
+
+// 辅助函数：base64 转 bytes
+const base64ToBytes = (base64: string): number[] => {
+  const binary = atob(base64)
+  const bytes: number[] = []
+  for (let i = 0; i < binary.length; i++) {
+    bytes.push(binary.charCodeAt(i))
+  }
+  return bytes
 }
 
 const sign = async () => {
@@ -175,6 +285,9 @@ const verify = async () => {
                 <button @click="generateKeypair" class="btn" :disabled="loading.generate">
                     {{ loading.generate ? '生成中...' : '生成密钥对' }}
                 </button>
+                <button @click="testJavaDecrypt" class="btn btn-test">
+                    测试 Java 解密
+                </button>
             </div>
             <div v-if="errorMessage.generate" class="error-message">
                 {{ errorMessage.generate }}
@@ -193,26 +306,117 @@ const verify = async () => {
 
         <div class="section">
             <h3>2. 加密/解密</h3>
+            
+            <!-- 加密库选择 -->
+            <div class="library-selector">
+                <label class="section-label">加密库:</label>
+                <div class="mode-selector">
+                    <label>
+                        <input type="radio" v-model="cryptoLibrary" value="smcrypto" />
+                        <span class="mode-label">smcrypto</span>
+                    </label>
+                    <label>
+                        <input type="radio" v-model="cryptoLibrary" value="gmssl" />
+                        <span class="mode-label">gmssl (推荐)</span>
+                    </label>
+                </div>
+            </div>
+            
             <div v-if="errorMessage.encrypt" class="error-message">
                 {{ errorMessage.encrypt }}
             </div>
             <div v-if="errorMessage.decrypt" class="error-message">
                 {{ errorMessage.decrypt }}
             </div>
+            
+            <!-- 加密解密密钥输入区域 -->
+            <div class="key-input-section">
+                <div class="key-input-header">
+                    <label>加密公钥:</label>
+                    <button @click="useGeneratedKeyPairForEncrypt" class="btn-small" :disabled="!privateKey || !publicKey">
+                        使用生成的密钥对
+                    </button>
+                </div>
+                <textarea 
+                    v-model="encryptPublicKey" 
+                    rows="2" 
+                    class="key-input-field" 
+                    placeholder="输入用于加密的公钥（十六进制，130字符）或点击右侧按钮使用生成的公钥"
+                ></textarea>
+                
+                <div class="key-input-header">
+                    <label>解密私钥:</label>
+                </div>
+                <textarea 
+                    v-model="decryptPrivateKey" 
+                    rows="2" 
+                    class="key-input-field" 
+                    placeholder="输入用于解密的私钥（十六进制，64字符）或点击上方按钮使用生成的私钥"
+                ></textarea>
+            </div>
+            
             <div class="encryption-section">
                 <div class="input-group">
                     <label>明文:</label>
                     <textarea v-model="plaintext" rows="3" class="text-input" placeholder="输入要加密的明文"></textarea>
-                    <button @click="encrypt" class="btn" :disabled="loading.encrypt">
-                        {{ loading.encrypt ? '加密中...' : '加密' }}
-                    </button>
+                    <div class="button-row">
+                        <button @click="encrypt" class="btn" :disabled="loading.encrypt || !encryptPublicKey">
+                            {{ loading.encrypt ? '加密中...' : '加密' }}
+                        </button>
+                        <div class="mode-selector">
+                            <label>
+                                <input type="radio" v-model="encryptMode" value="hex" /> Hex
+                            </label>
+                            <label>
+                                <input type="radio" v-model="encryptMode" value="base64" /> Base64
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>密文:</label>
                     <textarea v-model="ciphertext" rows="3" class="text-input" placeholder="加密后的密文"></textarea>
-                    <button @click="decrypt" class="btn" :disabled="loading.decrypt">
-                        {{ loading.decrypt ? '解密中...' : '解密' }}
-                    </button>
+                    <div class="button-row">
+                        <button @click="decrypt" class="btn" :disabled="loading.decrypt || !decryptPrivateKey">
+                            {{ loading.decrypt ? '解密中...' : '解密' }}
+                        </button>
+                        <div class="mode-selector">
+                            <label>
+                                <input type="radio" v-model="decryptMode" value="hex" /> Hex
+                            </label>
+                            <label>
+                                <input type="radio" v-model="decryptMode" value="base64" /> Base64
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 密文格式选择 -->
+                <div class="cipher-mode-section">
+                    <label class="section-label">密文格式:</label>
+                    <div class="mode-selector">
+                        <label>
+                            <input type="radio" v-model="cipherMode" value="c1c3c2" />
+                            <span class="mode-label">
+                                C1C3C2
+                                <span class="mode-desc">(国标标准)</span>
+                            </span>
+                        </label>
+                        <label>
+                            <input type="radio" v-model="cipherMode" value="c1c2c3" />
+                            <span class="mode-label">
+                                C1C2C3
+                                <span class="mode-desc">(旧标准)</span>
+                            </span>
+                        </label>
+                        <label>
+                            <input type="radio" v-model="cipherMode" value="asn1" />
+                            <span class="mode-label">
+                                ASN.1
+                                <span class="mode-desc">(DER编码)</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -230,8 +434,8 @@ const verify = async () => {
             <div class="key-input-section">
                 <div class="key-input-header">
                     <label>签名私钥:</label>
-                    <button @click="useGeneratedPrivateKey" class="btn-small" :disabled="!privateKey">
-                        使用生成的私钥
+                    <button @click="useGeneratedKeyPairForSign" class="btn-small" :disabled="!privateKey || !publicKey">
+                        使用生成的密钥对
                     </button>
                 </div>
                 <textarea 
@@ -243,15 +447,12 @@ const verify = async () => {
                 
                 <div class="key-input-header">
                     <label>验证公钥:</label>
-                    <button @click="useGeneratedPublicKey" class="btn-small" :disabled="!publicKey">
-                        使用生成的公钥
-                    </button>
                 </div>
                 <textarea 
                     v-model="verifyPublicKey" 
                     rows="2" 
                     class="key-input-field" 
-                    placeholder="输入用于验证的公钥（十六进制，130字符）或点击右侧按钮使用生成的公钥"
+                    placeholder="输入用于验证的公钥（十六进制，130字符）或点击上方按钮使用生成的公钥"
                 ></textarea>
             </div>
             
@@ -321,6 +522,14 @@ const verify = async () => {
 
 .btn:hover {
     background: #45a049;
+}
+
+.btn-test {
+    background: #2196F3;
+}
+
+.btn-test:hover {
+    background: #1976D2;
 }
 
 .key-pair {
@@ -490,5 +699,66 @@ textarea::placeholder {
 .btn-small:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.button-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.mode-selector {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.mode-selector label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.mode-selector input[type="radio"] {
+    cursor: pointer;
+}
+
+.cipher-mode-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.mode-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mode-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.library-selector {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 </style>
