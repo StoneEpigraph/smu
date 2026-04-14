@@ -32,248 +32,238 @@ const signPrivateKey = ref('')
 const verifyPublicKey = ref('')
 
 const loading = ref({
-  generate: false,
-  encrypt: false,
-  decrypt: false,
-  sign: false,
-  verify: false
+    generate: false,
+    encrypt: false,
+    decrypt: false,
+    sign: false,
+    verify: false
 })
 
 const errorMessage = ref({
-  generate: '',
-  encrypt: '',
-  decrypt: '',
-  sign: '',
-  verify: ''
+    generate: '',
+    encrypt: '',
+    decrypt: '',
+    sign: '',
+    verify: ''
 })
 
 const clearError = (type: keyof typeof errorMessage.value) => {
-  errorMessage.value[type] = ''
+    errorMessage.value[type] = ''
 }
 
 // 使用生成的私钥
 const useGeneratedPrivateKey = () => {
-  if (privateKey.value) {
-    signPrivateKey.value = privateKey.value
-  }
+    if (privateKey.value) {
+        signPrivateKey.value = privateKey.value
+    }
 }
 
 // 使用生成的公钥
 const useGeneratedPublicKey = () => {
-  if (publicKey.value) {
-    verifyPublicKey.value = publicKey.value
-  }
+    if (publicKey.value) {
+        verifyPublicKey.value = publicKey.value
+    }
 }
 
 // 使用生成的公钥（加密）
 const useGeneratedPublicKeyForEncrypt = () => {
-  if (publicKey.value) {
-    encryptPublicKey.value = publicKey.value
-  }
+    if (publicKey.value) {
+        encryptPublicKey.value = publicKey.value
+    }
 }
 
 // 使用生成的私钥（解密）
 const useGeneratedPrivateKeyForDecrypt = () => {
-  if (privateKey.value) {
-    decryptPrivateKey.value = privateKey.value
-  }
+    if (privateKey.value) {
+        decryptPrivateKey.value = privateKey.value
+    }
 }
 
 // 使用生成的密钥对（加密/解密）
 const useGeneratedKeyPairForEncrypt = () => {
-  if (publicKey.value && privateKey.value) {
-    encryptPublicKey.value = publicKey.value
-    decryptPrivateKey.value = privateKey.value
-  }
+    if (publicKey.value && privateKey.value) {
+        encryptPublicKey.value = publicKey.value
+        decryptPrivateKey.value = privateKey.value
+    }
 }
 
 // 使用生成的密钥对（签名/验证）
 const useGeneratedKeyPairForSign = () => {
-  if (publicKey.value && privateKey.value) {
-    signPrivateKey.value = privateKey.value
-    verifyPublicKey.value = publicKey.value
-  }
+    if (publicKey.value && privateKey.value) {
+        signPrivateKey.value = privateKey.value
+        verifyPublicKey.value = publicKey.value
+    }
 }
 
 const generateKeypair = async () => {
-  clearError('generate')
-  loading.value.generate = true
-  
-  try {
-    const keypair = await invoke<any>('generate_sm2_keypair')
-    privateKey.value = keypair.private_key
-    publicKey.value = keypair.public_key
-    await incrementUseCount('sm2')
-  } catch (error) {
-    errorMessage.value.generate = `生成密钥对失败: ${error}`
-    console.error('生成密钥对失败:', error)
-  } finally {
-    loading.value.generate = false
-  }
-}
+    clearError('generate')
+    loading.value.generate = true
 
-const testJavaDecrypt = async () => {
-  try {
-    const result = await invoke<string>('test_java_sm2_decrypt')
-    alert(result)
-  } catch (error) {
-    console.error('测试失败:', error)
-    alert(`测试失败: ${error}`)
-  }
+    try {
+        const keypair = await invoke<any>('generate_sm2_keypair')
+        privateKey.value = keypair.private_key
+        publicKey.value = keypair.public_key
+        await incrementUseCount('sm2')
+    } catch (error) {
+        errorMessage.value.generate = `生成密钥对失败: ${error}`
+        console.error('生成密钥对失败:', error)
+    } finally {
+        loading.value.generate = false
+    }
 }
 
 const encrypt = async () => {
-  if (!plaintext.value || !encryptPublicKey.value) {
-    errorMessage.value.encrypt = '请输入明文和公钥'
-    return
-  }
-  
-  clearError('encrypt')
-  loading.value.encrypt = true
-
-  try {
-    const result = await invoke<string>('sm2_encrypt', {
-      plaintext: plaintext.value,
-      publicKey: encryptPublicKey.value,
-      cipherMode: cipherMode.value,
-      useGmssl: cryptoLibrary.value === 'gmssl'
-    })
-    
-    // 根据模式转换输出
-    if (encryptMode.value === 'base64') {
-      const hexBytes = hexToBytes(result)
-      ciphertext.value = bytesToBase64(hexBytes)
-    } else {
-      ciphertext.value = result
+    if (!plaintext.value || !encryptPublicKey.value) {
+        errorMessage.value.encrypt = '请输入明文和公钥'
+        return
     }
-    
-    await incrementUseCount('sm2')
-  } catch (error) {
-    errorMessage.value.encrypt = `加密失败: ${error}`
-    console.error('加密失败:', error)
-  } finally {
-    loading.value.encrypt = false
-  }
+
+    clearError('encrypt')
+    loading.value.encrypt = true
+
+    try {
+        const result = await invoke<string>('sm2_encrypt', {
+            plaintext: plaintext.value,
+            publicKey: encryptPublicKey.value,
+            cipherMode: cipherMode.value,
+            useGmssl: cryptoLibrary.value === 'gmssl'
+        })
+
+        // 根据模式转换输出
+        if (encryptMode.value === 'base64') {
+            const hexBytes = hexToBytes(result)
+            ciphertext.value = bytesToBase64(hexBytes)
+        } else {
+            ciphertext.value = result
+        }
+
+        await incrementUseCount('sm2')
+    } catch (error) {
+        errorMessage.value.encrypt = `加密失败: ${error}`
+        console.error('加密失败:', error)
+    } finally {
+        loading.value.encrypt = false
+    }
 }
 
 const decrypt = async () => {
-  if (!ciphertext.value || !decryptPrivateKey.value) {
-    errorMessage.value.decrypt = '请输入密文和私钥'
-    return
-  }
-  
-  clearError('decrypt')
-  loading.value.decrypt = true
-
-  try {
-    // 根据模式转换输入
-    let ciphertextRaw = ciphertext.value
-    let isBase64 = false
-    
-    if (decryptMode.value === 'base64') {
-      isBase64 = true
-    } else {
-      // Hex 模式，验证格式
-      if (!/^[0-9a-fA-F]+$/.test(ciphertext.value)) {
-        throw new Error('无效的 Hex 格式密文')
-      }
+    if (!ciphertext.value || !decryptPrivateKey.value) {
+        errorMessage.value.decrypt = '请输入密文和私钥'
+        return
     }
-    
-    const result = await invoke<string>('sm2_decrypt', {
-      ciphertext: ciphertextRaw,
-      privateKey: decryptPrivateKey.value,
-      cipherMode: cipherMode.value,
-      isBase64: isBase64,
-      useGmssl: cryptoLibrary.value === 'gmssl'
-    })
-    plaintext.value = result
-    await incrementUseCount('sm2')
-  } catch (error) {
-    errorMessage.value.decrypt = `解密失败: ${error}`
-    console.error('解密失败:', error)
-  } finally {
-    loading.value.decrypt = false
-  }
+
+    clearError('decrypt')
+    loading.value.decrypt = true
+
+    try {
+        // 根据模式转换输入
+        let ciphertextRaw = ciphertext.value
+        let isBase64 = false
+
+        if (decryptMode.value === 'base64') {
+            isBase64 = true
+        } else {
+            // Hex 模式，验证格式
+            if (!/^[0-9a-fA-F]+$/.test(ciphertext.value)) {
+                throw new Error('无效的 Hex 格式密文')
+            }
+        }
+
+        const result = await invoke<string>('sm2_decrypt', {
+            ciphertext: ciphertextRaw,
+            privateKey: decryptPrivateKey.value,
+            cipherMode: cipherMode.value,
+            isBase64: isBase64,
+            useGmssl: cryptoLibrary.value === 'gmssl'
+        })
+        plaintext.value = result
+        await incrementUseCount('sm2')
+    } catch (error) {
+        errorMessage.value.decrypt = `解密失败: ${error}`
+        console.error('解密失败:', error)
+    } finally {
+        loading.value.decrypt = false
+    }
 }
 
 // 辅助函数：hex 转 bytes
 const hexToBytes = (hex: string): number[] => {
-  const bytes: number[] = []
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes.push(parseInt(hex.substr(i, 2), 16))
-  }
-  return bytes
+    const bytes: number[] = []
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes.push(parseInt(hex.substr(i, 2), 16))
+    }
+    return bytes
 }
 
 // 辅助函数：bytes 转 hex
 const bytesToHex = (bytes: number[]): string => {
-  return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+    return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 // 辅助函数：bytes 转 base64
 const bytesToBase64 = (bytes: number[]): string => {
-  const binary = String.fromCharCode(...bytes)
-  return btoa(binary)
+    const binary = String.fromCharCode(...bytes)
+    return btoa(binary)
 }
 
 // 辅助函数：base64 转 bytes
 const base64ToBytes = (base64: string): number[] => {
-  const binary = atob(base64)
-  const bytes: number[] = []
-  for (let i = 0; i < binary.length; i++) {
-    bytes.push(binary.charCodeAt(i))
-  }
-  return bytes
+    const binary = atob(base64)
+    const bytes: number[] = []
+    for (let i = 0; i < binary.length; i++) {
+        bytes.push(binary.charCodeAt(i))
+    }
+    return bytes
 }
 
 const sign = async () => {
-  if (!message.value || !signPrivateKey.value) {
-    errorMessage.value.sign = '请输入消息和私钥'
-    return
-  }
-  
-  clearError('sign')
-  loading.value.sign = true
+    if (!message.value || !signPrivateKey.value) {
+        errorMessage.value.sign = '请输入消息和私钥'
+        return
+    }
 
-  try {
-    const result = await invoke<string>('sm2_sign', {
-      message: message.value,
-      privateKey: signPrivateKey.value
-    })
-    signature.value = result
-    await incrementUseCount('sm2')
-  } catch (error) {
-    errorMessage.value.sign = `签名失败: ${error}`
-    console.error('签名失败:', error)
-  } finally {
-    loading.value.sign = false
-  }
+    clearError('sign')
+    loading.value.sign = true
+
+    try {
+        const result = await invoke<string>('sm2_sign', {
+            message: message.value,
+            privateKey: signPrivateKey.value
+        })
+        signature.value = result
+        await incrementUseCount('sm2')
+    } catch (error) {
+        errorMessage.value.sign = `签名失败: ${error}`
+        console.error('签名失败:', error)
+    } finally {
+        loading.value.sign = false
+    }
 }
 
 const verify = async () => {
-  if (!message.value || !signature.value || !verifyPublicKey.value) {
-    errorMessage.value.verify = '请输入消息、签名和公钥'
-    return
-  }
-  
-  clearError('verify')
-  loading.value.verify = true
-  verifyResult.value = null
+    if (!message.value || !signature.value || !verifyPublicKey.value) {
+        errorMessage.value.verify = '请输入消息、签名和公钥'
+        return
+    }
 
-  try {
-    const result = await invoke<boolean>('sm2_verify', {
-      message: message.value,
-      signatureHex: signature.value,
-      publicKey: verifyPublicKey.value
-    })
-    verifyResult.value = result
-    await incrementUseCount('sm2')
-  } catch (error) {
-    errorMessage.value.verify = `验签失败: ${error}`
-    console.error('验签失败:', error)
-  } finally {
-    loading.value.verify = false
-  }
+    clearError('verify')
+    loading.value.verify = true
+    verifyResult.value = null
+
+    try {
+        const result = await invoke<boolean>('sm2_verify', {
+            message: message.value,
+            signatureHex: signature.value,
+            publicKey: verifyPublicKey.value
+        })
+        verifyResult.value = result
+        await incrementUseCount('sm2')
+    } catch (error) {
+        errorMessage.value.verify = `验签失败: ${error}`
+        console.error('验签失败:', error)
+    } finally {
+        loading.value.verify = false
+    }
 }
 </script>
 
@@ -284,9 +274,6 @@ const verify = async () => {
             <div class="controls">
                 <button @click="generateKeypair" class="btn" :disabled="loading.generate">
                     {{ loading.generate ? '生成中...' : '生成密钥对' }}
-                </button>
-                <button @click="testJavaDecrypt" class="btn btn-test">
-                    测试 Java 解密
                 </button>
             </div>
             <div v-if="errorMessage.generate" class="error-message">
@@ -306,7 +293,7 @@ const verify = async () => {
 
         <div class="section">
             <h3>2. 加密/解密</h3>
-            
+
             <!-- 加密库选择 -->
             <div class="library-selector">
                 <label class="section-label">加密库:</label>
@@ -321,40 +308,33 @@ const verify = async () => {
                     </label>
                 </div>
             </div>
-            
+
             <div v-if="errorMessage.encrypt" class="error-message">
                 {{ errorMessage.encrypt }}
             </div>
             <div v-if="errorMessage.decrypt" class="error-message">
                 {{ errorMessage.decrypt }}
             </div>
-            
+
             <!-- 加密解密密钥输入区域 -->
             <div class="key-input-section">
                 <div class="key-input-header">
                     <label>加密公钥:</label>
-                    <button @click="useGeneratedKeyPairForEncrypt" class="btn-small" :disabled="!privateKey || !publicKey">
+                    <button @click="useGeneratedKeyPairForEncrypt" class="btn-small"
+                        :disabled="!privateKey || !publicKey">
                         使用生成的密钥对
                     </button>
                 </div>
-                <textarea 
-                    v-model="encryptPublicKey" 
-                    rows="2" 
-                    class="key-input-field" 
-                    placeholder="输入用于加密的公钥（十六进制，130字符）或点击右侧按钮使用生成的公钥"
-                ></textarea>
-                
+                <textarea v-model="encryptPublicKey" rows="2" class="key-input-field"
+                    placeholder="输入用于加密的公钥（十六进制，130字符）或点击右侧按钮使用生成的公钥"></textarea>
+
                 <div class="key-input-header">
                     <label>解密私钥:</label>
                 </div>
-                <textarea 
-                    v-model="decryptPrivateKey" 
-                    rows="2" 
-                    class="key-input-field" 
-                    placeholder="输入用于解密的私钥（十六进制，64字符）或点击上方按钮使用生成的私钥"
-                ></textarea>
+                <textarea v-model="decryptPrivateKey" rows="2" class="key-input-field"
+                    placeholder="输入用于解密的私钥（十六进制，64字符）或点击上方按钮使用生成的私钥"></textarea>
             </div>
-            
+
             <div class="encryption-section">
                 <div class="input-group">
                     <label>明文:</label>
@@ -390,7 +370,7 @@ const verify = async () => {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- 密文格式选择 -->
                 <div class="cipher-mode-section">
                     <label class="section-label">密文格式:</label>
@@ -429,7 +409,7 @@ const verify = async () => {
             <div v-if="errorMessage.verify" class="error-message">
                 {{ errorMessage.verify }}
             </div>
-            
+
             <!-- 密钥输入区域 -->
             <div class="key-input-section">
                 <div class="key-input-header">
@@ -438,24 +418,16 @@ const verify = async () => {
                         使用生成的密钥对
                     </button>
                 </div>
-                <textarea 
-                    v-model="signPrivateKey" 
-                    rows="2" 
-                    class="key-input-field" 
-                    placeholder="输入用于签名的私钥（十六进制，64字符）或点击右侧按钮使用生成的私钥"
-                ></textarea>
-                
+                <textarea v-model="signPrivateKey" rows="2" class="key-input-field"
+                    placeholder="输入用于签名的私钥（十六进制，64字符）或点击右侧按钮使用生成的私钥"></textarea>
+
                 <div class="key-input-header">
                     <label>验证公钥:</label>
                 </div>
-                <textarea 
-                    v-model="verifyPublicKey" 
-                    rows="2" 
-                    class="key-input-field" 
-                    placeholder="输入用于验证的公钥（十六进制，130字符）或点击上方按钮使用生成的公钥"
-                ></textarea>
+                <textarea v-model="verifyPublicKey" rows="2" class="key-input-field"
+                    placeholder="输入用于验证的公钥（十六进制，130字符）或点击上方按钮使用生成的公钥"></textarea>
             </div>
-            
+
             <div class="signature-section">
                 <div class="input-group">
                     <label>消息:</label>
@@ -522,14 +494,6 @@ const verify = async () => {
 
 .btn:hover {
     background: #45a049;
-}
-
-.btn-test {
-    background: #2196F3;
-}
-
-.btn-test:hover {
-    background: #1976D2;
 }
 
 .key-pair {
