@@ -290,7 +290,7 @@ onUnmounted(async () => {
 <template>
   <div class="app-container" @keydown="handleKeydown" tabindex="-1">
     <div class="main-window">
-      <div v-if="!selectedPlugin" class="search-section">
+      <div v-if="!selectedPlugin" class="main-search-section">
         <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate"
           @openSettings="handleOpenSettings" />
         <ResultList :plugins="filteredPlugins" :selectedIndex="selectedIndex"
@@ -313,7 +313,7 @@ onUnmounted(async () => {
   </div>
 </template>
 
-<style>
+<style socped>
 * {
   margin: 0;
   padding: 0;
@@ -351,7 +351,7 @@ body {
   flex-direction: column;
 }
 
-.search-section {
+.main-search-section {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
