@@ -51,34 +51,6 @@ const clearError = (type: keyof typeof errorMessage.value) => {
     errorMessage.value[type] = ''
 }
 
-// 使用生成的私钥
-const useGeneratedPrivateKey = () => {
-    if (privateKey.value) {
-        signPrivateKey.value = privateKey.value
-    }
-}
-
-// 使用生成的公钥
-const useGeneratedPublicKey = () => {
-    if (publicKey.value) {
-        verifyPublicKey.value = publicKey.value
-    }
-}
-
-// 使用生成的公钥（加密）
-const useGeneratedPublicKeyForEncrypt = () => {
-    if (publicKey.value) {
-        encryptPublicKey.value = publicKey.value
-    }
-}
-
-// 使用生成的私钥（解密）
-const useGeneratedPrivateKeyForDecrypt = () => {
-    if (privateKey.value) {
-        decryptPrivateKey.value = privateKey.value
-    }
-}
-
 // 使用生成的密钥对（加密/解密）
 const useGeneratedKeyPairForEncrypt = () => {
     if (publicKey.value && privateKey.value) {
@@ -195,25 +167,10 @@ const hexToBytes = (hex: string): number[] => {
     return bytes
 }
 
-// 辅助函数：bytes 转 hex
-const bytesToHex = (bytes: number[]): string => {
-    return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
 // 辅助函数：bytes 转 base64
 const bytesToBase64 = (bytes: number[]): string => {
     const binary = String.fromCharCode(...bytes)
     return btoa(binary)
-}
-
-// 辅助函数：base64 转 bytes
-const base64ToBytes = (base64: string): number[] => {
-    const binary = atob(base64)
-    const bytes: number[] = []
-    for (let i = 0; i < binary.length; i++) {
-        bytes.push(binary.charCodeAt(i))
-    }
-    return bytes
 }
 
 const sign = async () => {
