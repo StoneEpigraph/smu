@@ -31,3 +31,6 @@ src-tauri/gen
 # Rust
 Cargo.lock
 *.rs.bk
+
+# reference_code
+reference_code
