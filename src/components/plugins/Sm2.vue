@@ -19,7 +19,7 @@ const encryptMode = ref<'hex' | 'base64'>('hex')
 const decryptMode = ref<'hex' | 'base64'>('hex')
 
 // SM2 加密密文格式
-const cipherMode = ref<'c1c3c2' | 'c1c2c3' | 'asn1'>('c1c3c2')
+const cipherMode = ref<'c1c3c2' | 'c1c2c3' | 'asn1' | 'java'>('c1c3c2')
 
 // 使用的加密库
 const cryptoLibrary = ref<'smcrypto' | 'gmssl'>('smcrypto')
@@ -94,19 +94,27 @@ const encrypt = async () => {
     loading.value.encrypt = true
 
     try {
-        const result = await invoke<string>('sm2_encrypt', {
-            plaintext: plaintext.value,
-            publicKey: encryptPublicKey.value,
-            cipherMode: cipherMode.value,
-            useGmssl: cryptoLibrary.value === 'gmssl'
-        })
-
-        // 根据模式转换输出
-        if (encryptMode.value === 'base64') {
-            const hexBytes = hexToBytes(result)
-            ciphertext.value = bytesToBase64(hexBytes)
-        } else {
+        if (cipherMode.value === 'java') {
+            const result = await invoke<string>('sm2_encrypt_base64', {
+                plaintext: plaintext.value,
+                publicKey: encryptPublicKey.value,
+            })
             ciphertext.value = result
+        } else {
+            const result = await invoke<string>('sm2_encrypt', {
+                plaintext: plaintext.value,
+                publicKey: encryptPublicKey.value,
+                cipherMode: cipherMode.value,
+                useGmssl: cryptoLibrary.value === 'gmssl'
+            })
+
+            // 根据模式转换输出
+            if (encryptMode.value === 'base64') {
+                const hexBytes = hexToBytes(result)
+                ciphertext.value = bytesToBase64(hexBytes)
+            } else {
+                ciphertext.value = result
+            }
         }
 
         await incrementUseCount('sm2')
@@ -128,27 +136,35 @@ const decrypt = async () => {
     loading.value.decrypt = true
 
     try {
-        // 根据模式转换输入
-        let ciphertextRaw = ciphertext.value
-        let isBase64 = false
-
-        if (decryptMode.value === 'base64') {
-            isBase64 = true
+        if (cipherMode.value === 'java') {
+            const result = await invoke<string>('sm2_decrypt_base64', {
+                ciphertext: ciphertext.value,
+                privateKey: decryptPrivateKey.value,
+            })
+            plaintext.value = result
         } else {
-            // Hex 模式，验证格式
-            if (!/^[0-9a-fA-F]+$/.test(ciphertext.value)) {
-                throw new Error('无效的 Hex 格式密文')
-            }
-        }
+            // 根据模式转换输入
+            let ciphertextRaw = ciphertext.value
+            let isBase64 = false
 
-        const result = await invoke<string>('sm2_decrypt', {
-            ciphertext: ciphertextRaw,
-            privateKey: decryptPrivateKey.value,
-            cipherMode: cipherMode.value,
-            isBase64: isBase64,
-            useGmssl: cryptoLibrary.value === 'gmssl'
-        })
-        plaintext.value = result
+            if (decryptMode.value === 'base64') {
+                isBase64 = true
+            } else {
+                // Hex 模式，验证格式
+                if (!/^[0-9a-fA-F]+$/.test(ciphertext.value)) {
+                    throw new Error('无效的 Hex 格式密文')
+                }
+            }
+
+            const result = await invoke<string>('sm2_decrypt', {
+                ciphertext: ciphertextRaw,
+                privateKey: decryptPrivateKey.value,
+                cipherMode: cipherMode.value,
+                isBase64: isBase64,
+                useGmssl: cryptoLibrary.value === 'gmssl'
+            })
+            plaintext.value = result
+        }
         await incrementUseCount('sm2')
     } catch (error) {
         errorMessage.value.decrypt = `解密失败: ${error}`
@@ -300,7 +316,7 @@ const verify = async () => {
                         <button @click="encrypt" class="btn" :disabled="loading.encrypt || !encryptPublicKey">
                             {{ loading.encrypt ? '加密中...' : '加密' }}
                         </button>
-                        <div class="mode-selector">
+                        <div v-if="cipherMode !== 'java'" class="mode-selector">
                             <label>
                                 <input type="radio" v-model="encryptMode" value="hex" /> Hex
                             </label>
@@ -308,6 +324,7 @@ const verify = async () => {
                                 <input type="radio" v-model="encryptMode" value="base64" /> Base64
                             </label>
                         </div>
+                        <span v-else class="java-mode-hint">Base64 输出</span>
                     </div>
                 </div>
                 <div class="input-group">
@@ -317,7 +334,7 @@ const verify = async () => {
                         <button @click="decrypt" class="btn" :disabled="loading.decrypt || !decryptPrivateKey">
                             {{ loading.decrypt ? '解密中...' : '解密' }}
                         </button>
-                        <div class="mode-selector">
+                        <div v-if="cipherMode !== 'java'" class="mode-selector">
                             <label>
                                 <input type="radio" v-model="decryptMode" value="hex" /> Hex
                             </label>
@@ -325,6 +342,7 @@ const verify = async () => {
                                 <input type="radio" v-model="decryptMode" value="base64" /> Base64
                             </label>
                         </div>
+                        <span v-else class="java-mode-hint">Base64 输入，自动补 04 前缀</span>
                     </div>
                 </div>
 
@@ -351,6 +369,13 @@ const verify = async () => {
                             <span class="mode-label">
                                 ASN.1
                                 <span class="mode-desc">(DER编码)</span>
+                            </span>
+                        </label>
+                        <label>
+                            <input type="radio" v-model="cipherMode" value="java" />
+                            <span class="mode-label">
+                                Java兼容
+                                <span class="mode-desc">(Base64/C1C3C2/自动04前缀)</span>
                             </span>
                         </label>
                     </div>
@@ -681,5 +706,11 @@ textarea::placeholder {
     background: rgba(76, 175, 80, 0.1);
     border-radius: 6px;
     border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.java-mode-hint {
+    font-size: 12px;
+    color: rgba(255, 193, 7, 0.8);
+    font-style: italic;
 }
 </style>

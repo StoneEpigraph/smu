@@ -173,6 +173,44 @@ pub fn sm2_decrypt(ciphertext: String, private_key: String, cipher_mode: Option<
     }
 }
 
+// Java 兼容: 对应 SM2Helper.encryptBase64Str
+// 使用 C1C3C2 模式加密，返回 Base64 编码的密文
+#[tauri::command(rename_all = "camelCase")]
+pub fn sm2_encrypt_base64(plaintext: String, public_key: String) -> Result<String, String> {
+    let public_key_bytes = hex::decode(&public_key).map_err(|e| format!("Invalid public key hex: {}", e))?;
+    let public_key_hex = hex::encode(&public_key_bytes);
+    let encrypt_ctx = Encrypt::new(&public_key_hex);
+    let encrypted = encrypt_ctx.encrypt(plaintext.as_bytes());
+    Ok(general_purpose::STANDARD.encode(encrypted))
+}
+
+// Java 兼容: 对应 SM2Helper.decryptByBase64Str
+// 接受 Base64 密文，使用 C1C3C2 模式解密，返回 UTF-8 文本
+// 注意：Java BouncyCastle 输出含 "04" 前缀，smcrypto decrypt 不含前缀，需要去掉
+#[tauri::command(rename_all = "camelCase")]
+pub fn sm2_decrypt_base64(ciphertext: String, private_key: String) -> Result<String, String> {
+    let private_key_bytes = hex::decode(&private_key).map_err(|e| format!("Invalid private key hex: {}", e))?;
+    if private_key_bytes.len() != 32 {
+        return Err(format!("私钥长度错误: 期望 32 字节，实际 {} 字节", private_key_bytes.len()));
+    }
+    let private_key_hex = hex::encode(&private_key_bytes);
+    let input_bytes = general_purpose::STANDARD.decode(&ciphertext)
+        .map_err(|e| format!("Invalid base64 ciphertext: {}", e))?;
+    // smcrypto 期望格式: C1(64)||C3(32)||C2，无 04 前缀
+    // Java BouncyCastle 输出含 04 前缀，需剥离
+    let input_bytes = if input_bytes.starts_with(&[0x04]) {
+        input_bytes[1..].to_vec()
+    } else {
+        input_bytes
+    };
+    let decrypt_ctx = Decrypt::new(&private_key_hex);
+    let decrypted = decrypt_ctx.decrypt(&input_bytes);
+    if decrypted.is_empty() {
+        return Err("解密失败：密文格式错误或密钥不匹配".to_string());
+    }
+    String::from_utf8(decrypted).map_err(|e| format!("解密结果不是有效的UTF-8文本: {}", e))
+}
+
 #[tauri::command(rename_all = "camelCase")]
 pub fn sm2_sign(message: String, private_key: String) -> Result<String, String> {
     let private_key_bytes = hex::decode(&private_key).map_err(|e| format!("Invalid private key hex: {}", e))?;

@@ -49,6 +49,8 @@ fn main() {
             commands::sm2_decrypt,
             commands::sm2_sign,
             commands::sm2_verify,
+            commands::sm2_encrypt_base64,
+            commands::sm2_decrypt_base64,
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;
