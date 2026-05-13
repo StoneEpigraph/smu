@@ -51,6 +51,12 @@ fn main() {
             commands::sm2_verify,
             commands::sm2_encrypt_base64,
             commands::sm2_decrypt_base64,
+            commands::init_calendar_table,
+            commands::add_calendar_todo,
+            commands::get_calendar_todos,
+            commands::update_calendar_todo,
+            commands::delete_calendar_todo,
+            commands::check_due_reminders,
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;
