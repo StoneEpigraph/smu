@@ -26,7 +26,7 @@ pub async fn encode_md5(input: String, app: AppHandle) -> Result<String, String>
     
     conn.execute(
         "INSERT OR REPLACE INTO md5_lookup (hash, plaintext) VALUES (?, ?)",
-        [&hash, &input],
+        [hash.to_lowercase(), input],
     ).map_err(|e| e.to_string())?;
     
     Ok(hash)
@@ -39,7 +39,7 @@ pub async fn decode_md5(hash: String, app: AppHandle) -> Result<Option<String>, 
     
     let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
     
-    let mut stmt = conn.prepare("SELECT plaintext FROM md5_lookup WHERE hash = ?")
+    let mut stmt = conn.prepare("SELECT plaintext FROM md5_lookup WHERE LOWER(hash) = LOWER(?)")
         .map_err(|e| e.to_string())?;
     
     let result = stmt.query_row([&hash], |row| row.get(0)).ok();

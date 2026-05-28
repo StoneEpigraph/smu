@@ -1,6 +1,7 @@
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_notification::NotificationExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TodoItem {
@@ -273,6 +274,15 @@ pub async fn check_due_reminders(app: AppHandle) -> Result<Vec<TodoItem>, String
             "UPDATE calendar_events SET notified = 1 WHERE id = ?",
             [todo.id],
         ).map_err(|e| e.to_string())?;
+        
+        if let Err(e) = app.notification()
+            .builder()
+            .title("日历提醒")
+            .body(&todo.event_desc)
+            .show() {
+            eprintln!("Failed to send notification: {}", e);
+        }
     }
     
-    Ok(result)}
+    Ok(result)
+}
