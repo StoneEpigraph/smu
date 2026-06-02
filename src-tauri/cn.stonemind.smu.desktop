@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=SMU
 Comment=SMU 工具箱
-Exec=/home/stone/workspace/rust/smu/src-tauri/target/debug/smu
-Icon=/home/stone/workspace/rust/smu/src-tauri/icons/icon.png
+Exec=smu
+Icon=smu
 Terminal=false
 Type=Application
 Categories=Utility;Development;

@@ -7,6 +7,7 @@ defineProps<{
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
+const todoInputRef = ref<HTMLInputElement | null>(null)
 const currentDate = ref(new Date())
 const selectedDate = ref<Date | null>(null)
 
@@ -165,11 +166,6 @@ const deleteTodo = async (id: number) => {
   }
 }
 
-const hasEvent = (date: Date | null): boolean => {
-  if (!date || !db) return false
-  return false
-}
-
 const isToday = (date: Date | null) => {
   if (!date) return false
   const today = new Date()
@@ -179,12 +175,6 @@ const isToday = (date: Date | null) => {
 const isSelected = (date: Date | null) => {
   if (!date || !selectedDate.value) return false
   return date.toDateString() === selectedDate.value.toDateString()
-}
-
-const isTodoDate = (date: Date | null): boolean => {
-  if (!date) return false
-  const dateStr = date.toISOString().split('T')[0]
-  return todos.value.some(t => t.event_date === dateStr && t.event_desc)
 }
 
 const goToToday = () => {

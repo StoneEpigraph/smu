@@ -1,0 +1,16 @@
+pkgbase = smu
+	pkgdesc = SMU 工具箱 - 轻量级实用工具集合
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/StoneEpigraph/smu
+	arch = x86_64
+	license = MIT
+	makedepends = cargo
+	makedepends = npm
+	makedepends = nodejs
+	depends = webkitgtk6
+	depends = gtk3
+	source = smu-0.1.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = smu

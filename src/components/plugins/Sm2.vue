@@ -245,7 +245,7 @@ const verify = async () => {
         <div class="section">
             <h3>1. 生成密钥对</h3>
             <div class="controls">
-                <button @click="generateKeypair" class="btn" :disabled="loading.generate">
+                <button @click="generateKeypair" class="btn btn-full" :disabled="loading.generate">
                     {{ loading.generate ? '生成中...' : '生成密钥对' }}
                 </button>
             </div>
@@ -313,7 +313,7 @@ const verify = async () => {
                     <label>明文:</label>
                     <textarea v-model="plaintext" rows="3" class="text-input" placeholder="输入要加密的明文"></textarea>
                     <div class="button-row">
-                        <button @click="encrypt" class="btn" :disabled="loading.encrypt || !encryptPublicKey">
+                        <button @click="encrypt" class="btn btn-full" :disabled="loading.encrypt || !encryptPublicKey">
                             {{ loading.encrypt ? '加密中...' : '加密' }}
                         </button>
                         <div v-if="cipherMode !== 'java'" class="mode-selector">
@@ -331,7 +331,7 @@ const verify = async () => {
                     <label>密文:</label>
                     <textarea v-model="ciphertext" rows="3" class="text-input" placeholder="加密后的密文"></textarea>
                     <div class="button-row">
-                        <button @click="decrypt" class="btn" :disabled="loading.decrypt || !decryptPrivateKey">
+                        <button @click="decrypt" class="btn btn-full" :disabled="loading.decrypt || !decryptPrivateKey">
                             {{ loading.decrypt ? '解密中...' : '解密' }}
                         </button>
                         <div v-if="cipherMode !== 'java'" class="mode-selector">
@@ -414,7 +414,7 @@ const verify = async () => {
                 <div class="input-group">
                     <label>消息:</label>
                     <textarea v-model="message" rows="3" class="text-input" placeholder="输入要签名的消息"></textarea>
-                    <button @click="sign" class="btn" :disabled="loading.sign || !signPrivateKey">
+                    <button @click="sign" class="btn btn-full" :disabled="loading.sign || !signPrivateKey">
                         {{ loading.sign ? '签名中...' : '签名' }}
                     </button>
                 </div>
@@ -423,7 +423,7 @@ const verify = async () => {
                     <textarea v-model="signature" rows="3" class="text-input" placeholder="签名生成后显示在这里"></textarea>
                 </div>
                 <div class="verify-section">
-                    <button @click="verify" class="btn" :disabled="loading.verify || !verifyPublicKey">
+                    <button @click="verify" class="btn btn-full" :disabled="loading.verify || !verifyPublicKey">
                         {{ loading.verify ? '验签中...' : '验签' }}
                     </button>
                     <div v-if="verifyResult !== null" class="verify-result">
@@ -476,6 +476,10 @@ const verify = async () => {
 
 .btn:hover {
     background: #45a049;
+}
+
+.btn-full {
+    width: 100%;
 }
 
 .key-pair {
