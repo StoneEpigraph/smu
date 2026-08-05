@@ -28,6 +28,8 @@ fn main() {
             commands::encode_sha1,
             commands::encode_sha256,
             commands::encode_sha512,
+            commands::encode_sm3,
+            commands::encode_sm3_hash,
             commands::encode_base64,
             commands::decode_base64,
             commands::encode_url,

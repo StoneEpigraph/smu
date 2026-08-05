@@ -23,6 +23,8 @@ const encodeTypes: EncodeType[] = [
   { id: 'sha1', name: 'SHA1', label: 'SHA-1' },
   { id: 'sha256', name: 'SHA256', label: 'SHA-256' },
   { id: 'sha512', name: 'SHA512', label: 'SHA-512' },
+  { id: 'sm3', name: 'SM3', label: 'SM3' },
+  { id: 'sm3hash', name: 'SM3Hash', label: 'SM3Hash(密码)' },
   { id: 'base64', name: 'Base64', label: 'Base64' },
   { id: 'base64_decode', name: 'Base64Decode', label: 'Base64解码', isDecode: true },
   { id: 'url', name: 'URL', label: 'URL编码' },
@@ -122,6 +124,12 @@ const computeResults = async () => {
           break
         case 'sha512':
           value = await invoke<string>('encode_sha512', { input: text })
+          break
+        case 'sm3':
+          value = await invoke<string>('encode_sm3', { input: text })
+          break
+        case 'sm3hash':
+          value = await invoke<string>('encode_sm3_hash', { input: text })
           break
         case 'base64':
           value = await invoke<string>('encode_base64', { input: text })

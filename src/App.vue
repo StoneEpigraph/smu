@@ -63,7 +63,7 @@ const plugins: Plugin[] = [
     name: 'Encoder',
     nameZh: '编码工具',
     icon: '🔐',
-    keywords: ['encode', '编码', 'md5', 'base64', 'sha', 'url', 'unicode', 'hex'],
+    keywords: ['encode', '编码', 'md5', 'base64', 'sha', 'sm3', 'url', 'unicode', 'hex'],
     component: Encoder
   },
   {
