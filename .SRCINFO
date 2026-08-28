@@ -8,8 +8,10 @@ pkgbase = smu
 	makedepends = cargo
 	makedepends = npm
 	makedepends = nodejs
-	depends = webkitgtk6
 	depends = gtk3
+	depends = libsoup3
+	optdepends = webkitgtk6: WebKit 支持 (如可用)
+	optdepends = webkitgtk4.0: WebKit 支持
 	source = smu-0.1.0.tar.gz
 	sha256sums = SKIP
 
