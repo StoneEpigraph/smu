@@ -67,24 +67,21 @@ fn main() {
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
             
-            // 显式设置窗口属性，确保配置生效
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_always_on_top(true);
-                let _ = window.center();
+            // 显式设置窗口属性，确保配置生效；处理窗口关闭事件，隐藏窗口而不是退出应用
+            if let Some(main_window) = app.get_webview_window("main") {
+                let _ = main_window.set_always_on_top(true);
+                let _ = main_window.center();
+
+                let window_clone = main_window.clone();
+                main_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = window_clone.hide();
+                    }
+                });
             }
-            
-            // 处理窗口关闭事件，隐藏窗口而不是退出应用
-            let main_window = app.get_webview_window("main").unwrap();
-            let window_clone = main_window.clone();
-            main_window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = window_clone.hide();
-                }
-            });
-            
-            let _tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+
+            let mut tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
                 .tooltip("SMU 工具箱")
                 .on_menu_event(|app, event| {
@@ -118,8 +115,11 @@ fn main() {
                             let _ = window.set_focus();
                         }
                     }
-                })
-                .build(app)?;
+                });
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+            let _tray = tray_builder.build(app)?;
             
             // 确保主窗口显示并始终在最前面
             if let Some(window) = app.get_webview_window("main") {
