@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod db;
+mod error;
 
 use tauri::{
     menu::{Menu, MenuItem},
@@ -54,7 +56,6 @@ fn main() {
             commands::sm2_verify,
             commands::sm2_encrypt_base64,
             commands::sm2_decrypt_base64,
-            commands::init_calendar_table,
             commands::add_calendar_todo,
             commands::get_calendar_todos,
             commands::update_calendar_todo,
@@ -62,6 +63,9 @@ fn main() {
             commands::check_due_reminders,
         ])
         .setup(|app| {
+            let db = db::init(app.handle())?;
+            app.manage(db);
+
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;
             let hide_item = MenuItem::with_id(app, "hide", "隐藏", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;

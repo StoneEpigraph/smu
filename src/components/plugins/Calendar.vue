@@ -212,12 +212,6 @@ const checkReminders = async () => {
 let reminderInterval: number | null = null
 
 onMounted(async () => {
-  try {
-    await invoke('init_calendar_table')
-  } catch (e) {
-    console.error('Init calendar table failed:', e)
-  }
-
   if (Notification.permission === 'default') {
     Notification.requestPermission()
   }

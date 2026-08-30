@@ -3,49 +3,35 @@ use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use sm3::Sm3;
 use base64::{Engine as _, engine::general_purpose};
-use rusqlite::Connection;
 use smcrypto::sm3 as smcrypto_sm3;
-use tauri::{AppHandle, Manager};
+use tauri::State;
+
+use crate::db::Db;
+use crate::error::AppResult;
 
 #[tauri::command]
-pub async fn encode_md5(input: String, app: AppHandle) -> Result<String, String> {
+pub async fn encode_md5(input: String, db: State<'_, Db>) -> AppResult<String> {
     let mut hasher = Md5::new();
     hasher.update(input.as_bytes());
     let hash = format!("{:x}", hasher.finalize());
-    
-    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
-    let db_path = app_dir.join("smu.db");
-    
-    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS md5_lookup (
-            hash TEXT PRIMARY KEY,
-            plaintext TEXT NOT NULL
-        )",
-        [],
-    ).map_err(|e| e.to_string())?;
-    
+
+    let conn = db.conn()?;
     conn.execute(
         "INSERT OR REPLACE INTO md5_lookup (hash, plaintext) VALUES (?, ?)",
         [hash.to_lowercase(), input],
-    ).map_err(|e| e.to_string())?;
-    
+    )?;
+
     Ok(hash)
 }
 
 #[tauri::command]
-pub async fn decode_md5(hash: String, app: AppHandle) -> Result<Option<String>, String> {
-    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let db_path = app_dir.join("smu.db");
-    
-    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
-    
-    let mut stmt = conn.prepare("SELECT plaintext FROM md5_lookup WHERE LOWER(hash) = LOWER(?)")
-        .map_err(|e| e.to_string())?;
-    
+pub async fn decode_md5(hash: String, db: State<'_, Db>) -> AppResult<Option<String>> {
+    let conn = db.conn()?;
+
+    let mut stmt = conn.prepare("SELECT plaintext FROM md5_lookup WHERE LOWER(hash) = LOWER(?)")?;
+
     let result = stmt.query_row([&hash], |row| row.get(0)).ok();
-    
+
     Ok(result)
 }
 
