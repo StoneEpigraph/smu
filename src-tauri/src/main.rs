@@ -6,10 +6,9 @@ mod error;
 
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager,
 };
-
 
 fn main() {
     tauri::Builder::default()
@@ -70,7 +69,7 @@ fn main() {
             let hide_item = MenuItem::with_id(app, "hide", "隐藏", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
-            
+
             // 显式设置窗口属性，确保配置生效；处理窗口关闭事件，隐藏窗口而不是退出应用
             if let Some(main_window) = app.get_webview_window("main") {
                 let _ = main_window.set_always_on_top(true);
@@ -88,29 +87,32 @@ fn main() {
             let mut tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
                 .tooltip("SMU 工具箱")
-                .on_menu_event(|app, event| {
-                    match event.id.as_ref() {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.set_always_on_top(true);
-                                let _ = window.show();
-                                let _ = window.set_always_on_top(true);
-                                let _ = window.set_focus();
-                            }
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.set_always_on_top(true);
+                            let _ = window.show();
+                            let _ = window.set_always_on_top(true);
+                            let _ = window.set_focus();
                         }
-                        "hide" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.hide();
-                            }
-                        }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {}
                     }
+                    "hide" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.hide();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.set_always_on_top(true);
@@ -124,14 +126,14 @@ fn main() {
                 tray_builder = tray_builder.icon(icon.clone());
             }
             let _tray = tray_builder.build(app)?;
-            
+
             // 确保主窗口显示并始终在最前面
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_always_on_top(true);
                 let _ = window.show();
                 let _ = window.set_focus();
             }
-            
+
             Ok(())
         })
         .run(tauri::generate_context!())

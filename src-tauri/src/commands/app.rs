@@ -97,10 +97,7 @@ pub async fn add_calendar_todo(
 }
 
 #[tauri::command]
-pub async fn get_calendar_todos(
-    event_date: String,
-    db: State<'_, Db>,
-) -> AppResult<Vec<TodoItem>> {
+pub async fn get_calendar_todos(event_date: String, db: State<'_, Db>) -> AppResult<Vec<TodoItem>> {
     let conn = db.conn()?;
 
     let mut stmt = conn.prepare(
@@ -182,11 +179,13 @@ pub async fn check_due_reminders(app: AppHandle, db: State<'_, Db>) -> AppResult
             [todo.id],
         )?;
 
-        if let Err(e) = app.notification()
+        if let Err(e) = app
+            .notification()
             .builder()
             .title("日历提醒")
             .body(&todo.event_desc)
-            .show() {
+            .show()
+        {
             eprintln!("Failed to send notification: {}", e);
         }
     }

@@ -1,8 +1,8 @@
-use md5::{Md5, Digest};
+use base64::{engine::general_purpose, Engine as _};
+use md5::{Digest, Md5};
 use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use sm3::Sm3;
-use base64::{Engine as _, engine::general_purpose};
 use smcrypto::sm3 as smcrypto_sm3;
 use tauri::State;
 
@@ -84,7 +84,7 @@ pub fn encode_base64(input: &str) -> String {
 pub fn decode_base64(input: &str) -> Result<String, String> {
     match general_purpose::STANDARD.decode(input) {
         Ok(bytes) => String::from_utf8(bytes).map_err(|e| e.to_string()),
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -95,7 +95,9 @@ pub fn encode_url(input: &str) -> String {
 
 #[tauri::command]
 pub fn decode_url(input: &str) -> Result<String, String> {
-    urlencoding::decode(input).map(|s| s.to_string()).map_err(|e| e.to_string())
+    urlencoding::decode(input)
+        .map(|s| s.to_string())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -105,7 +107,8 @@ pub fn encode_hex(input: &str) -> String {
 
 #[tauri::command]
 pub fn decode_hex(input: &str) -> Result<String, String> {
-    hex::decode(input).map_err(|e| e.to_string())
+    hex::decode(input)
+        .map_err(|e| e.to_string())
         .and_then(|bytes| String::from_utf8(bytes).map_err(|e| e.to_string()))
 }
 
