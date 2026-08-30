@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import type { Component } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
 // 快捷键现在由后端全局处理，前端不再需要注册
@@ -15,6 +16,7 @@ import IdCard from './components/plugins/IdCard.vue'
 import TimeConverter from './components/plugins/TimeConverter.vue'
 import JsonFormatter from './components/plugins/JsonFormatter.vue'
 import Sm2 from './components/plugins/Sm2.vue'
+import type { AppSettings, PluginConfig } from './types/settings'
 
 interface Plugin {
   id: string
@@ -22,7 +24,7 @@ interface Plugin {
   nameZh: string
   icon: string
   keywords: string[]
-  component: any
+  component: Component
 }
 
 const plugins: Plugin[] = [
@@ -107,7 +109,7 @@ const useCount = ref<Record<string, number>>({})
 const selectedIndex = ref(0)
 const appVersion = ref('1.0.0')
 const showSettings = ref(false)
-const appSettings = ref<any>(null)
+const appSettings = ref<AppSettings | null>(null)
 
 const loadUseCount = async () => {
   try {
@@ -137,7 +139,7 @@ const handleCloseSettings = () => {
   showSettings.value = false
 }
 
-const handleSaveSettings = async (settings: any) => {
+const handleSaveSettings = async (settings: AppSettings) => {
   try {
     console.log('Saving settings:', settings)
     const settingsJson = JSON.stringify(settings)
@@ -158,7 +160,7 @@ const loadAppSettings = async () => {
     const settingsJson = await invoke<string>('load_settings')
     console.log('Raw settings JSON:', settingsJson)
     if (settingsJson && settingsJson !== 'null') {
-      appSettings.value = JSON.parse(settingsJson)
+      appSettings.value = JSON.parse(settingsJson) as AppSettings
       console.log('Settings loaded successfully:', appSettings.value)
       console.log('Plugin settings:', appSettings.value?.plugins)
     } else {
@@ -206,9 +208,10 @@ const filteredPlugins = computed(() => {
   let result = [...plugins]
 
   // 过滤掉被禁用的插件
-  if (appSettings.value?.plugins) {
+  const savedPlugins = appSettings.value?.plugins
+  if (savedPlugins) {
     result = result.filter(plugin => {
-      const pluginSettings = appSettings.value.plugins.find((p: any) => p.id === plugin.id)
+      const pluginSettings = savedPlugins.find(p => p.id === plugin.id)
       return pluginSettings ? pluginSettings.enabled : true
     })
   }
@@ -238,7 +241,7 @@ const currentPluginConfig = computed(() => {
   if (!selectedPlugin.value || !appSettings.value?.plugins) {
     return null
   }
-  const pluginSettings = appSettings.value.plugins.find((p: any) => p.id === selectedPlugin.value?.id)
+  const pluginSettings = appSettings.value.plugins.find((p: PluginConfig) => p.id === selectedPlugin.value?.id)
   return pluginSettings?.config || null
 })
 
@@ -313,7 +316,7 @@ onUnmounted(async () => {
   </div>
 </template>
 
-<style socped>
+<style scoped>
 * {
   margin: 0;
   padding: 0;

@@ -1,23 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
+import type { AppSettings, PluginConfig } from '../types/settings'
 
 const props = defineProps<{
-  initialSettings?: any
+  initialSettings?: AppSettings | null
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'saveSettings', settings: any): void
+  (e: 'saveSettings', settings: AppSettings): void
 }>()
-
-interface PluginConfig {
-  id: string
-  name: string
-  nameZh: string
-  icon: string
-  enabled: boolean
-  config: Record<string, any>
-}
 
 const menuItems = [
   { id: 'system', name: '系统', icon: '⚙️' },
@@ -134,7 +126,7 @@ const selectPlugin = (plugin: PluginConfig) => {
 }
 
 const saveSettings = () => {
-  const allSettings = {
+  const allSettings: AppSettings = {
     system: systemConfig.value,
     plugins: pluginConfigs.value
   }
@@ -151,7 +143,7 @@ const initializeSettings = () => {
     }
 
     if (settings.plugins && Array.isArray(settings.plugins)) {
-      settings.plugins.forEach((savedPlugin: any) => {
+      settings.plugins.forEach((savedPlugin: PluginConfig) => {
         const plugin = pluginConfigs.value.find(p => p.id === savedPlugin.id)
         if (plugin) {
           plugin.enabled = savedPlugin.enabled
