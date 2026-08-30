@@ -38,9 +38,6 @@ pub fn generate_sm2_keypair() -> Result<Sm2KeyPair, String> {
         general_purpose::STANDARD.encode(&public_key_bytes)
     );
     
-    eprintln!("[SM2 KeyGen] 私钥: {}", private_key_hex);
-    eprintln!("[SM2 KeyGen] 公钥: {}", public_key_hex);
-    
     Ok(Sm2KeyPair {
         private_key: private_key_hex,
         public_key: public_key_hex,
@@ -81,17 +78,10 @@ pub fn sm2_decrypt(ciphertext: String, private_key: String, cipher_mode: Option<
         hex::decode(&ciphertext).map_err(|e| format!("Invalid hex ciphertext: {}", e))?
     };
     
-    eprintln!("[SM2 Decrypt] 私钥长度: {} 字节", private_key_bytes.len());
-    eprintln!("[SM2 Decrypt] 密文长度: {} 字节", encrypted_bytes.len());
-    eprintln!("[SM2 Decrypt] 密文模式: {:?}", cipher_mode);
-    eprintln!("[SM2 Decrypt] Base64: {:?}", is_base64);
-    eprintln!("[SM2 Decrypt] 密文前16字节: {}", hex::encode(&encrypted_bytes[..encrypted_bytes.len().min(16)]));
-    
     // Java 兼容：根据参数决定是否添加 "04" 前缀
     let encrypted_hex = hex::encode(&encrypted_bytes);
     let mut encrypted_bytes = encrypted_bytes;
     if add_prefix.unwrap_or(false) && !encrypted_hex.starts_with("04") {
-        eprintln!("[SM2 Decrypt] Java 兼容模式：密文不以 04 开头，添加 04 前缀");
         let mut prefixed = vec![0x04u8];
         prefixed.extend_from_slice(&encrypted_bytes);
         encrypted_bytes = prefixed;
@@ -105,37 +95,27 @@ pub fn sm2_decrypt(ciphertext: String, private_key: String, cipher_mode: Option<
         _ => decrypt_ctx.decrypt(&encrypted_bytes), // 默认使用 C1C3C2 模式
     };
     
-    eprintln!("[SM2 Decrypt] 解密结果长度: {} 字节", decrypted.len());
-    
     if decrypted.is_empty() {
         return Err("解密失败：密文格式错误或密钥不匹配。请检查：1.密文格式(C1C3C2/C1C2C3/ASN.1) 2.密钥对是否匹配 3.密文是否完整".to_string());
     }
-    
-    eprintln!("[SM2 Decrypt] 解密结果前16字节: {}", hex::encode(&decrypted[..decrypted.len().min(16)]));
-    
+
     let output_format = output_format.unwrap_or_else(|| "auto".to_string());
     
     match output_format.as_str() {
         "hex" => {
             let hex_result = hex::encode(&decrypted);
-            eprintln!("[SM2 Decrypt] 输出格式: Hex, 结果: {}", hex_result);
             Ok(hex_result)
         },
         "base64" => {
             let base64_result = general_purpose::STANDARD.encode(&decrypted);
-            eprintln!("[SM2 Decrypt] 输出格式: Base64, 结果: {}", base64_result);
             Ok(base64_result)
         },
         "text" | "auto" => {
             match String::from_utf8(decrypted.clone()) {
                 Ok(text) => {
-                    eprintln!("[SM2 Decrypt] 输出格式: Text, 结果: {}", text);
                     Ok(text)
                 },
-                Err(e) => {
-                    eprintln!("[SM2 Decrypt] UTF-8 转换失败: {}", e);
-                    eprintln!("[SM2 Decrypt] 解密结果(Hex): {}", hex::encode(&decrypted));
-                    
+                Err(_e) => {
                     // UTF-8 转换失败，使用 Java byte[] 方式输出
                     let hex_result = hex::encode(&decrypted);
                     let base64_result = general_purpose::STANDARD.encode(&decrypted);
@@ -150,15 +130,12 @@ pub fn sm2_decrypt(ciphertext: String, private_key: String, cipher_mode: Option<
                         .collect();
                     let java_byte_array_str = format!("[{}]", java_byte_array.join(", "));
                     
-                    eprintln!("[SM2 Decrypt] Java byte[] 格式: {}", java_byte_array_str);
-                    
                     if output_format == "text" {
                         Err(format!(
                             "解密后数据不是有效的UTF-8文本。\n\n可用的输出格式：\n1. Hex: {}\n2. Base64: {}\n3. Java byte[]: {}\n\n请使用 output_format='hex' 或 'base64' 来获取二进制数据。",
                             hex_result, base64_result, java_byte_array_str
                         ))
                     } else {
-                        eprintln!("[SM2 Decrypt] 自动切换到 Java byte[] 兼容格式 (Hex)");
                         Ok(format!(
                             "[JAVA_BYTE_ARRAY]\nHex: {}\nBase64: {}\nArray: {}",
                             hex_result, base64_result, java_byte_array_str
