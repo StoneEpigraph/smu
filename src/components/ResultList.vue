@@ -1,35 +1,31 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
+
+interface ResultPlugin {
+  id: string
+  name: string
+  nameZh: string
+  icon: string
+  keywords: string[]
+  useCount: number
+}
 
 const props = defineProps<{
-  plugins: any[]
+  plugins: ResultPlugin[]
   selectedIndex?: number
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', plugin: any): void
+  (e: 'select', plugin: ResultPlugin): void
   (e: 'update:selectedIndex', index: number): void
 }>()
 
-const selectedIndex = ref(props.selectedIndex || 0)
-
-// 监听插件列表变化，重置选中索引
+// 插件列表变化时把选中索引重置回 0；索引以 App 为唯一数据源，避免回车打开非高亮项
 watch(() => props.plugins, () => {
-  selectedIndex.value = 0
-}, { deep: true })
-
-// 监听外部传入的选中索引变化
-watch(() => props.selectedIndex, (newIndex) => {
-  if (newIndex !== undefined) {
-    selectedIndex.value = newIndex
-  }
+  emit('update:selectedIndex', 0)
 })
 
-
-
-
-
-const handleItemClick = (plugin: any) => {
+const handleItemClick = (plugin: ResultPlugin) => {
   emit('select', plugin)
 }
 </script>
@@ -37,7 +33,7 @@ const handleItemClick = (plugin: any) => {
 <template>
   <div class="result-list">
     <div v-for="(plugin, index) in plugins" :key="plugin.id"
-      :class="['result-item', { selected: index === selectedIndex }]" @click="handleItemClick(plugin)">
+      :class="['result-item', { selected: index === (selectedIndex ?? 0) }]" @click="handleItemClick(plugin)">
       <span class="plugin-icon">{{ plugin.icon }}</span>
       <div class="plugin-info">
         <div class="plugin-name">{{ plugin.nameZh }}</div>

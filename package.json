@@ -1,14 +1,21 @@
 {
   "name": "smu",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:win": "node scripts/build.mjs nsis msi",
+    "build:linux": "node scripts/build.mjs deb rpm appimage",
+    "build:deb": "node scripts/build.mjs deb",
+    "build:rpm": "node scripts/build.mjs rpm",
+    "build:appimage": "node scripts/build.mjs appimage",
+    "build:arch": "BUILDDIR=$PWD/.makepkg makepkg -f",
+    "arch:src": "sh scripts/arch-source.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.4.0",

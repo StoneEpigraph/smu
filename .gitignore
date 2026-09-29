@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 # Editor directories and files
+.zcode
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -27,6 +28,10 @@ dist-ssr
 src-tauri/target
 src-tauri/gen
 *.bundle
+
+# makepkg 本地产物（源码包 smu-*.tar.gz 除外，AUR 需要跟踪；构建目录由 BUILDDIR 指向 .makepkg）
+/.makepkg/
+*.pkg.tar.zst
 
 # Rust
 Cargo.lock

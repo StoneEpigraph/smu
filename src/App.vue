@@ -197,10 +197,16 @@ const handleKeydown = async (e: KeyboardEvent) => {
     return
   }
 
-  // 单次 Esc 或连续两次 Esc 都隐藏
+  // Esc：插件内返回 → 清空搜索 → 隐藏窗口
   if (e.key === 'Escape') {
     e.preventDefault()
-    await win.hide()
+    if (selectedPlugin.value) {
+      handleBack()
+    } else if (searchQuery.value) {
+      searchQuery.value = ''
+    } else {
+      await win.hide()
+    }
   }
 }
 
@@ -245,15 +251,19 @@ const currentPluginConfig = computed(() => {
   return pluginSettings?.config || null
 })
 
-const handleSelectPlugin = async (plugin: Plugin | null) => {
-  if (plugin) {
-    selectedPlugin.value = plugin
-    await incrementUseCount(plugin.id)
-  } else if (filteredPlugins.value.length > 0) {
+// 只依赖 id：ResultList 发出的插件对象不含 component 字段，从插件注册表按 id 取回完整定义
+const handleSelectPlugin = async (selected: { id: string } | null) => {
+  const target = selected ? plugins.find(p => p.id === selected.id) : null
+  if (target) {
+    selectedPlugin.value = target
+    await incrementUseCount(target.id)
+  } else if (selected === null && filteredPlugins.value.length > 0) {
     // 直接回车，选择当前选中的插件
     const selectedPluginItem = filteredPlugins.value[selectedIndex.value]
-    selectedPlugin.value = selectedPluginItem
-    await incrementUseCount(selectedPluginItem.id)
+    if (selectedPluginItem) {
+      selectedPlugin.value = selectedPluginItem
+      await incrementUseCount(selectedPluginItem.id)
+    }
   }
 }
 
@@ -291,7 +301,7 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div class="app-container" @keydown="handleKeydown" tabindex="-1">
+  <div class="app-container">
     <div class="main-window">
       <div v-if="!selectedPlugin" class="main-search-section">
         <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate"

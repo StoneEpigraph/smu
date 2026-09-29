@@ -7,7 +7,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
-  (e: 'select', plugin: any): void
+  (e: 'select', plugin: null): void
   (e: 'navigate', direction: 'up' | 'down'): void
   (e: 'openSettings'): void
 }>()
@@ -20,10 +20,8 @@ const handleInput = (e: Event) => {
 }
 
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') {
-    emit('update:modelValue', '')
-  } else if (e.key === 'Enter') {
-    // 触发选择第一个插件的事件
+  if (e.key === 'Enter') {
+    // 触发选择第一个插件的事件（Esc 清空/返回/隐藏由 App 统一处理）
     emit('select', null)
   } else if (e.key === 'ArrowDown') {
     // 向下导航到结果列表
@@ -45,7 +43,7 @@ defineExpose({
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input ref="inputRef" type="text" :value="modelValue" @input="handleInput" @keydown="handleKeydown"
-      @keydown.enter="emit('select', null)" placeholder="搜索工具... (计算器, 日历, 笔记, 取色器)" class="search-input" autofocus />
+      placeholder="搜索工具... (计算器, 日历, 笔记, 取色器)" class="search-input" autofocus />
     <span v-if="modelValue" class="clear-btn" @click="emit('update:modelValue', '')">✕</span>
     <span class="settings-btn" @click="emit('openSettings')">⚙️</span>
   </div>

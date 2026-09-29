@@ -146,44 +146,54 @@ pub async fn delete_calendar_todo(id: i64, db: State<'_, Db>) -> AppResult<()> {
     Ok(())
 }
 
-#[tauri::command]
-pub async fn check_due_reminders(app: AppHandle, db: State<'_, Db>) -> AppResult<Vec<TodoItem>> {
-    let conn = db.conn()?;
+/// 查出到期未提醒的待办、标记已通知并发送系统通知。
+/// 供后台调度线程使用；应用未运行时错过的过期提醒会在下次启动时补发。
+pub fn check_due_reminders_inner(app: &AppHandle, db: &Db) -> AppResult<Vec<TodoItem>> {
+    let result = {
+        let conn = db.conn()?;
 
-    let now = chrono::Local::now();
-    let today = now.format("%Y-%m-%d").to_string();
-    let current_time = now.format("%H:%M").to_string();
+        let now = chrono::Local::now();
+        let today = now.format("%Y-%m-%d").to_string();
+        let current_time = now.format("%H:%M").to_string();
 
-    let mut stmt = conn.prepare(
-        "SELECT id, event_date, event_time, event_desc, notified FROM calendar_events WHERE event_date = ? AND notified = 0 AND event_time <= ? AND event_desc != ''"
-    )?;
-
-    let todos = stmt.query_map(rusqlite::params![today, current_time], |row| {
-        Ok(TodoItem {
-            id: row.get(0)?,
-            event_date: row.get(1)?,
-            event_time: row.get(2)?,
-            event_desc: row.get(3)?,
-            notified: row.get(4)?,
-        })
-    })?;
-
-    let mut result = Vec::new();
-    for todo in todos {
-        result.push(todo?);
-    }
-
-    for todo in &result {
-        conn.execute(
-            "UPDATE calendar_events SET notified = 1 WHERE id = ?",
-            [todo.id],
+        let mut stmt = conn.prepare(
+            "SELECT id, event_date, event_time, event_desc, notified FROM calendar_events
+             WHERE notified = 0 AND event_desc != ''
+               AND (event_date < ?1 OR (event_date = ?1 AND event_time <= ?2))",
         )?;
 
+        let todos = stmt.query_map(rusqlite::params![today, current_time], |row| {
+            Ok(TodoItem {
+                id: row.get(0)?,
+                event_date: row.get(1)?,
+                event_time: row.get(2)?,
+                event_desc: row.get(3)?,
+                notified: row.get(4)?,
+            })
+        })?;
+
+        let mut result = Vec::new();
+        for todo in todos {
+            result.push(todo?);
+        }
+
+        for todo in &result {
+            conn.execute(
+                "UPDATE calendar_events SET notified = 1 WHERE id = ?",
+                [todo.id],
+            )?;
+        }
+
+        result
+    };
+
+    // 通知是阻塞的 IPC 调用，放到数据库锁外执行
+    for todo in &result {
         if let Err(e) = app
             .notification()
             .builder()
             .title("日历提醒")
-            .body(&todo.event_desc)
+            .body(&format!("{} {}", todo.event_time, todo.event_desc))
             .show()
         {
             eprintln!("Failed to send notification: {}", e);

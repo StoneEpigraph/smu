@@ -59,11 +59,26 @@ fn main() {
             commands::get_calendar_todos,
             commands::update_calendar_todo,
             commands::delete_calendar_todo,
-            commands::check_due_reminders,
         ])
         .setup(|app| {
             let db = db::init(app.handle())?;
             app.manage(db);
+
+            // 后台线程每 30 秒检查一次到期提醒；应用常驻托盘，窗口隐藏时也能通知
+            let reminder_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                let check = || {
+                    let db = reminder_handle.state::<db::Db>();
+                    if let Err(e) = commands::check_due_reminders_inner(&reminder_handle, &db) {
+                        eprintln!("Reminder check failed: {}", e);
+                    }
+                };
+                check();
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(30));
+                    check();
+                }
+            });
 
             let show_item = MenuItem::with_id(app, "show", "显示", true, None::<&str>)?;
             let hide_item = MenuItem::with_id(app, "hide", "隐藏", true, None::<&str>)?;

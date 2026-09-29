@@ -145,11 +145,21 @@ const filterStructure = () => {
     .filter(item => item.isMatch)
 }
 
-const highlightText = (text: string, query: string) => {
-  if (!query || !text) return text
+const escapeHtml = (text: string) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<span class="highlight-text">$1</span>')
+const highlightText = (text: string, query: string) => {
+  // 结果经 v-html 渲染：必须先转义 HTML，防止 JSON 内容注入标签
+  const safe = escapeHtml(text ?? '')
+  if (!query || !text) return safe
+
+  const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  return safe.replace(regex, '<span class="highlight-text">$1</span>')
 }
 
 const formatJson = async () => {

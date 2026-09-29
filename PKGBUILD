@@ -1,7 +1,7 @@
 # Maintainer: WhatsUpeng <whatsupeng@163.com>
 pkgname=smu
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.1.1
+pkgrel=1
 pkgdesc="SMU 工具箱 - 轻量级实用工具集合"
 arch=("x86_64")
 url="https://github.com/StoneEpigraph/smu"

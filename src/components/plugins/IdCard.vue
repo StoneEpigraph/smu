@@ -1,157 +1,53 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import {
+  PROVINCE_CODES,
+  validateIdCard as validateIdCardRaw,
+  generateIdCard as generateIdCardRaw,
+  type IdCardInfo
+} from '../../utils/idcard'
 
-const props = defineProps<{
+defineProps<{
   initialInput?: string
 }>()
 
 const idCard = ref('')
-const result = ref<any>(null)
+const result = ref<IdCardInfo | null>(null)
 const error = ref('')
 
 const selectedProvince = ref('')
 const selectedGender = ref('')
 const minAge = ref<number | null>(null)
 const maxAge = ref<number | null>(null)
-const birthYearStart = ref<number | null>(null)
-const birthYearEnd = ref<number | null>(null)
-
-const provinceCode: Record<string, string> = {
-  '11': '北京市', '12': '天津市', '13': '河北省', '14': '山西省',
-  '15': '内蒙古自治区', '21': '辽宁省', '22': '吉林省', '23': '黑龙江省',
-  '31': '上海市', '32': '江苏省', '33': '浙江省', '34': '安徽省',
-  '35': '福建省', '36': '江西省', '37': '山东省', '41': '河南省',
-  '42': '湖北省', '43': '湖南省', '44': '广东省', '45': '广西壮族自治区',
-  '46': '海南省', '50': '重庆市', '51': '四川省', '52': '贵州省',
-  '53': '云南省', '54': '西藏自治区', '61': '陕西省', '62': '甘肃省',
-  '63': '青海省', '64': '宁夏回族自治区', '65': '新疆维吾尔自治区',
-  '71': '台湾省', '81': '香港特别行政区', '82': '澳门特别行政区'
-}
-
-const weightFactors = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
-const checkCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
 
 const validateIdCard = () => {
   error.value = ''
   result.value = null
 
-  const id = idCard.value.trim().toUpperCase()
-
-  if (!/^\d{17}[\dX]$/.test(id)) {
-    error.value = '身份证号格式不正确，应为18位'
-    return false
+  const check = validateIdCardRaw(idCard.value)
+  if (check.ok) {
+    result.value = check.info
+  } else {
+    error.value = check.error
   }
-
-  const province = provinceCode[id.substring(0, 2)]
-  if (!province) {
-    error.value = '无效的省份代码'
-    return false
-  }
-
-  const birthYear = parseInt(id.substring(6, 10))
-  const birthMonth = parseInt(id.substring(10, 12))
-  const birthDay = parseInt(id.substring(12, 14))
-
-  if (birthMonth < 1 || birthMonth > 12) {
-    error.value = '无效的月份'
-    return false
-  }
-  if (birthDay < 1 || birthDay > 31) {
-    error.value = '无效的日期'
-    return false
-  }
-
-  const now = new Date().getFullYear()
-  if (birthYear < 1900 || birthYear > now) {
-    error.value = '无效的出生年份'
-    return false
-  }
-
-  let sum = 0
-  for (let i = 0; i < 17; i++) {
-    sum += parseInt(id[i]) * weightFactors[i]
-  }
-  const checkCode = checkCodes[sum % 11]
-
-  if (id[17] !== checkCode) {
-    error.value = `校验码错误，正确校验码应为 ${checkCode}`
-    return false
-  }
-
-  const gender = parseInt(id[16]) % 2 === 0 ? '女' : '男'
-
-  result.value = {
-    province,
-    birthDate: `${birthYear}年${birthMonth}月${birthDay}日`,
-    gender,
-    age: now - birthYear
-  }
-  return true
 }
 
 const generateIdCard = () => {
   error.value = ''
   result.value = null
 
-  const now = new Date().getFullYear()
+  const generated = generateIdCardRaw({
+    province: selectedProvince.value || undefined,
+    gender: selectedGender.value as '' | '男' | '女',
+    minAge: minAge.value,
+    maxAge: maxAge.value
+  })
 
-  let provinces = Object.keys(provinceCode)
-  if (selectedProvince.value) {
-    provinces = [selectedProvince.value]
-  }
-  const province = provinces[Math.floor(Math.random() * provinces.length)]
-
-  let minYear = 1960
-  let maxYear = now - 18
-
-  if (minAge.value !== null && minAge.value >= 0) {
-    maxYear = now - minAge.value
-  }
-  if (maxAge.value !== null && maxAge.value >= 0) {
-    minYear = now - maxAge.value
-  }
-
-  if (minYear > maxYear) {
-    error.value = '年龄范围设置不正确'
-    return
-  }
-
-  const year = minYear + Math.floor(Math.random() * (maxYear - minYear + 1))
-  const month = 1 + Math.floor(Math.random() * 12)
-  const day = 1 + Math.floor(Math.random() * 28)
-
-  let genderNum: number
-  if (selectedGender.value === '男') {
-    genderNum = 1 + Math.floor(Math.random() * 500) * 2
-  } else if (selectedGender.value === '女') {
-    genderNum = 2 + Math.floor(Math.random() * 500) * 2
+  if (generated.ok) {
+    idCard.value = generated.id
+    result.value = generated.info
   } else {
-    genderNum = Math.floor(Math.random() * 1000)
-  }
-  const seq = genderNum.toString().padStart(3, '0')
-
-  const city = Math.floor(Math.random() * 20).toString().padStart(2, '0')
-  const district = Math.floor(Math.random() * 20).toString().padStart(2, '0')
-
-  let id17 = province + city + district +
-    year.toString() +
-    month.toString().padStart(2, '0') +
-    day.toString().padStart(2, '0') + seq
-
-  let sum = 0
-  for (let i = 0; i < 17; i++) {
-    sum += parseInt(id17[i]) * weightFactors[i]
-  }
-  const checkCode = checkCodes[sum % 11]
-
-  idCard.value = id17 + checkCode
-
-  const gender = genderNum % 2 === 0 ? '女' : '男'
-  result.value = {
-    province: provinceCode[province],
-    birthDate: `${year}年${month}月${day}日`,
-    gender,
-    age: now - year
+    error.value = generated.error
   }
 }
 
@@ -160,20 +56,15 @@ const clearConditions = () => {
   selectedGender.value = ''
   minAge.value = null
   maxAge.value = null
-  birthYearStart.value = null
-  birthYearEnd.value = null
 }
 
 const copyToClipboard = async () => {
   if (idCard.value) {
-    await navigator.clipboard.writeText(idCard.value)
-  }
-}
-
-if (props.initialInput) {
-  idCard.value = props.initialInput.trim()
-  if (idCard.value.length === 18) {
-    validateIdCard()
+    try {
+      await navigator.clipboard.writeText(idCard.value)
+    } catch (e) {
+      console.error('Copy failed:', e)
+    }
   }
 }
 </script>
@@ -193,7 +84,7 @@ if (props.initialInput) {
           <label>省份:</label>
           <select v-model="selectedProvince" class="condition-select">
             <option value="">不限</option>
-            <option v-for="(name, code) in provinceCode" :key="code" :value="code">
+            <option v-for="(name, code) in PROVINCE_CODES" :key="code" :value="code">
               {{ name }}
             </option>
           </select>

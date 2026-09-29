@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { toLocalDateString } from '../../utils/date'
 
 defineProps<{
   initialInput?: string
 }>()
 
-const inputRef = ref<HTMLInputElement | null>(null)
 const todoInputRef = ref<HTMLInputElement | null>(null)
 const currentDate = ref(new Date())
 const selectedDate = ref<Date | null>(null)
@@ -87,7 +87,7 @@ const selectDate = async (date: Date | null) => {
 const loadTodos = async () => {
   if (!selectedDate.value) return
   try {
-    const dateStr = selectedDate.value.toISOString().split('T')[0]
+    const dateStr = toLocalDateString(selectedDate.value)
     const result = await invoke<TodoItem[]>('get_calendar_todos', { eventDate: dateStr })
     todos.value = result
   } catch (e) {
@@ -112,7 +112,7 @@ const addTodo = async () => {
   if (!selectedDate.value || !newTodoDesc.value?.trim()) return
 
   try {
-    const dateStr = selectedDate.value.toISOString().split('T')[0]
+    const dateStr = toLocalDateString(selectedDate.value)
     const timeStr = `${newTodoHour.value.toString().padStart(2, '0')}:${newTodoMinute.value.toString().padStart(2, '0')}`
     await invoke('add_calendar_todo', {
       eventDate: dateStr,
@@ -182,52 +182,7 @@ const goToToday = () => {
   selectDate(new Date())
 }
 
-const sendNotification = async (todo: TodoItem) => {
-  if (!('Notification' in window)) return
-
-  if (Notification.permission === 'default') {
-    await Notification.requestPermission()
-  }
-
-  if (Notification.permission === 'granted') {
-    new Notification('📅 日历提醒', {
-      body: `${todo.event_time} - ${todo.event_desc}`,
-      icon: ''
-    })
-  }
-}
-
-const checkReminders = async () => {
-  try {
-    const dueTodos = await invoke<TodoItem[]>('check_due_reminders')
-
-    for (const todo of dueTodos) {
-      await sendNotification(todo)
-    }
-  } catch (e) {
-    console.error('Check reminders failed:', e)
-  }
-}
-
-let reminderInterval: number | null = null
-
-onMounted(async () => {
-  if (Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
-
-  checkReminders()
-  reminderInterval = window.setInterval(checkReminders, 30000)
-
-  await nextTick()
-  inputRef.value?.focus()
-})
-
-onUnmounted(() => {
-  if (reminderInterval) {
-    clearInterval(reminderInterval)
-  }
-})
+// 到期检查与系统通知由后端线程每 30 秒统一调度，窗口隐藏时也能触发
 </script>
 
 <template>

@@ -11,29 +11,29 @@
       <div class="input-group">
         <label>日期:</label>
         <select v-model="selectedYear" @change="updateDate">
-          <option v-for="y in 100" :key="y" :value="1950 + y">{{ 1950 + y }}</option>
+          <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
         </select>
         <span class="separator">-</span>
         <select v-model="selectedMonth" @change="updateDate">
-          <option v-for="m in 12" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
+          <option v-for="m in monthOptions" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">-</span>
         <select v-model="selectedDay" @change="updateDate">
-          <option v-for="d in 31" :key="d" :value="d">{{ d.toString().padStart(2, '0') }}</option>
+          <option v-for="d in dayOptions" :key="d" :value="d">{{ d.toString().padStart(2, '0') }}</option>
         </select>
       </div>
       <div class="input-group">
         <label>时间:</label>
         <select v-model="selectedHour" @change="updateDate">
-          <option v-for="h in 23" :key="h" :value="h">{{ h.toString().padStart(2, '0') }}</option>
+          <option v-for="h in hourOptions" :key="h" :value="h">{{ h.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">:</span>
         <select v-model="selectedMinute" @change="updateDate">
-          <option v-for="m in 59" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
+          <option v-for="m in minuteOptions" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">:</span>
         <select v-model="selectedSecond" @change="updateDate">
-          <option v-for="s in 59" :key="s" :value="s">{{ s.toString().padStart(2, '0') }}</option>
+          <option v-for="s in secondOptions" :key="s" :value="s">{{ s.toString().padStart(2, '0') }}</option>
         </select>
       </div>
     </div>
@@ -46,28 +46,28 @@
       </div>
       <div class="input-group">
         <select v-model.number="calcYears" @change="calculateResult">
-          <option v-for="y in 50" :key="y" :value="y">{{ y.toString().padStart(2, '0') }}</option>
+          <option v-for="y in calcYearOptions" :key="y" :value="y">{{ y.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">-</span>
         <select v-model.number="calcMonths" @change="calculateResult">
-          <option v-for="m in 12" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
+          <option v-for="m in monthOptions" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">-</span>
         <select v-model.number="calcDays" @change="calculateResult">
-          <option v-for="d in 31" :key="d" :value="d">{{ d.toString().padStart(2, '0') }}</option>
+          <option v-for="d in dayOptions" :key="d" :value="d">{{ d.toString().padStart(2, '0') }}</option>
         </select>
       </div>
       <div class="input-group">
         <select v-model.number="calcHours" @change="calculateResult">
-          <option v-for="h in 23" :key="h" :value="h">{{ h.toString().padStart(2, '0') }}</option>
+          <option v-for="h in hourOptions" :key="h" :value="h">{{ h.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">:</span>
         <select v-model.number="calcMinutes" @change="calculateResult">
-          <option v-for="m in 59" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
+          <option v-for="m in minuteOptions" :key="m" :value="m">{{ m.toString().padStart(2, '0') }}</option>
         </select>
         <span class="separator">:</span>
         <select v-model.number="calcSeconds" @change="calculateResult">
-          <option v-for="s in 59" :key="s" :value="s">{{ s.toString().padStart(2, '0') }}</option>
+          <option v-for="s in secondOptions" :key="s" :value="s">{{ s.toString().padStart(2, '0') }}</option>
         </select>
         <button class="clear-calc-btn" @click="clearCalc">🗑️ 清空计算</button>
       </div>
@@ -97,9 +97,9 @@
             <div class="output-label">日期时间</div>
             <div class="output-value">{{ calcResultDate.toLocaleString('zh-CN') }}</div>
           </div>
-          <div class="output-item" @click="copyValue(calcResultDate.toISOString().split('T')[0])">
+          <div class="output-item" @click="copyValue(toLocalDateString(calcResultDate))">
             <div class="output-label">日期(-)</div>
-            <div class="output-value">{{ calcResultDate.toISOString().split('T')[0] }}</div>
+            <div class="output-value">{{ toLocalDateString(calcResultDate) }}</div>
           </div>
           <div class="output-item"
             @click="copyValue(`${calcResultDate.getFullYear()}/${String(calcResultDate.getMonth() + 1).padStart(2, '0')}/${String(calcResultDate.getDate()).padStart(2, '0')}`)">
@@ -137,17 +137,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-
-const incrementUseCount = async (toolName: string) => {
-  try {
-    await invoke('increment_use_count', {
-      pluginId: toolName
-    })
-  } catch (error) {
-    console.error('Error incrementing use count:', error)
-  }
-}
+import { toLocalDateString } from '../../utils/date'
 
 const selectedYear = ref(2024)
 const selectedMonth = ref(1)
@@ -163,12 +153,15 @@ const calcHours = ref(0)
 const calcMinutes = ref(0)
 const calcSeconds = ref(0)
 const calcResultDate = ref<Date | null>(null)
-const resultYear = ref(2024)
-const resultMonth = ref(1)
-const resultDay = ref(1)
-const resultHour = ref(0)
-const resultMinute = ref(0)
-const resultSecond = ref(0)
+
+// 下拉选项：必须包含 0（时/分/秒初始值为 0，日期年份从 1950 起）
+const yearOptions = Array.from({ length: 101 }, (_, i) => 1950 + i)
+const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1)
+const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
+const hourOptions = Array.from({ length: 24 }, (_, i) => i)
+const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
+const secondOptions = Array.from({ length: 60 }, (_, i) => i)
+const calcYearOptions = Array.from({ length: 51 }, (_, i) => i)
 
 const clearCalc = () => {
   calcOperation.value = 'add'
@@ -179,12 +172,6 @@ const clearCalc = () => {
   calcMinutes.value = 0
   calcSeconds.value = 0
   calcResultDate.value = null
-  resultYear.value = 2024
-  resultMonth.value = 1
-  resultDay.value = 1
-  resultHour.value = 0
-  resultMinute.value = 0
-  resultSecond.value = 0
 }
 const formats = ref({
   timestamp: '',
@@ -207,7 +194,7 @@ const updateDate = () => {
     timestamp: date.getTime().toString(),
     timestampSec: Math.floor(date.getTime() / 1000).toString(),
     dateTime: date.toLocaleString('zh-CN'),
-    dateDash: date.toISOString().split('T')[0],
+    dateDash: toLocalDateString(date),
     dateSlash: `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`,
     time: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`,
     iso: date.toISOString(),
@@ -280,12 +267,6 @@ const calculateResult = () => {
   }
 
   calcResultDate.value = result
-  resultYear.value = result.getFullYear()
-  resultMonth.value = result.getMonth() + 1
-  resultDay.value = result.getDate()
-  resultHour.value = result.getHours()
-  resultMinute.value = result.getMinutes()
-  resultSecond.value = result.getSeconds()
 }
 
 const getLabel = (key: string) => {
@@ -306,7 +287,6 @@ const getLabel = (key: string) => {
 
 onMounted(() => {
   refreshNow()
-  incrementUseCount('TimeConverter')
 })
 </script>
 
@@ -392,7 +372,7 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 14px;
   background: rgba(255, 255, 255, 0.1);
-  color: red;
+  color: #4FC3F7;
   font-weight: bold;
   text-align: center;
   min-width: 80px;
@@ -479,80 +459,6 @@ onMounted(() => {
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.result-inputs {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.result-inputs .input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.result-inputs .input-group label {
-  width: 60px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.result-inputs .input-group select {
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
-  color: red;
-  font-weight: bold;
-  text-align: center;
-  min-width: 80px;
-  height: 36px;
-  line-height: 34px;
-  box-sizing: border-box;
-}
-
-.result-inputs {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.result-inputs .input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.result-inputs .input-group label {
-  width: 60px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.result-inputs .input-group select {
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
-  color: red;
-  font-weight: bold;
-  text-align: center;
-  min-width: 80px;
-  height: 36px;
-  line-height: 34px;
-  box-sizing: border-box;
 }
 
 .output-grid {
