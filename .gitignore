@@ -37,5 +37,8 @@ src-tauri/gen
 Cargo.lock
 *.rs.bk
 
+# makepkg 遗留产物目录（构建目录已改为 .makepkg）
+/pkg/
+
 # reference_code
 reference_code

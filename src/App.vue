@@ -210,6 +210,28 @@ const handleKeydown = async (e: KeyboardEvent) => {
   }
 }
 
+type ResizeDirectionType = 'East' | 'North' | 'NorthEast' | 'NorthWest' | 'South' | 'SouthEast' | 'SouthWest' | 'West'
+
+const handleMinimize = async () => {
+  await getCurrentWindow().minimize()
+}
+
+const handleHideWindow = async () => {
+  await getCurrentWindow().hide()
+}
+
+const handleToggleMaximize = async () => {
+  await getCurrentWindow().toggleMaximize()
+}
+
+const startResize = async (direction: ResizeDirectionType) => {
+  try {
+    await getCurrentWindow().startResizeDragging(direction)
+  } catch (e) {
+    console.log('Resize dragging failed:', e)
+  }
+}
+
 const filteredPlugins = computed(() => {
   let result = [...plugins]
 
@@ -303,6 +325,14 @@ onUnmounted(async () => {
 <template>
   <div class="app-container">
     <div class="main-window">
+      <div class="titlebar" data-tauri-drag-region>
+        <span class="titlebar-title" data-tauri-drag-region>SMU</span>
+        <div class="titlebar-actions">
+          <button class="win-btn" title="最小化" @click="handleMinimize">─</button>
+          <button class="win-btn" title="最大化" @click="handleToggleMaximize">□</button>
+          <button class="win-btn win-btn-close" title="关闭" @click="handleHideWindow">✕</button>
+        </div>
+      </div>
       <div v-if="!selectedPlugin" class="main-search-section">
         <SearchBar v-model="searchQuery" ref="searchInputRef" @select="handleSelectPlugin" @navigate="handleNavigate"
           @openSettings="handleOpenSettings" />
@@ -323,6 +353,15 @@ onUnmounted(async () => {
     </div>
     <Settings v-if="showSettings" :initialSettings="appSettings" @close="handleCloseSettings"
       @saveSettings="handleSaveSettings" />
+    <!-- 无边框窗口的四边/四角缩放热区 -->
+    <div class="resize-handle rh-n" @mousedown.prevent="startResize('North')"></div>
+    <div class="resize-handle rh-s" @mousedown.prevent="startResize('South')"></div>
+    <div class="resize-handle rh-e" @mousedown.prevent="startResize('East')"></div>
+    <div class="resize-handle rh-w" @mousedown.prevent="startResize('West')"></div>
+    <div class="resize-handle rh-nw" @mousedown.prevent="startResize('NorthWest')"></div>
+    <div class="resize-handle rh-ne" @mousedown.prevent="startResize('NorthEast')"></div>
+    <div class="resize-handle rh-sw" @mousedown.prevent="startResize('SouthWest')"></div>
+    <div class="resize-handle rh-se" @mousedown.prevent="startResize('SouthEast')"></div>
   </div>
 </template>
 
@@ -357,7 +396,7 @@ body {
   background: rgba(30, 30, 35, 0.95);
   border-radius: 0;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   display: flex;
@@ -428,5 +467,128 @@ body {
 .version {
   color: rgba(255, 255, 255, 0.5);
   font-size: 12px;
+}
+
+/* ===== 自定义窄标题栏 ===== */
+.titlebar {
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 11px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+}
+
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.8px;
+  pointer-events: none;
+}
+
+.titlebar-actions {
+  display: flex;
+  gap: 3px;
+}
+
+.win-btn {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.win-btn-close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+/* ===== 无边框窗口缩放热区 ===== */
+.resize-handle {
+  position: fixed;
+  z-index: 9999;
+}
+
+.rh-n {
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  cursor: n-resize;
+}
+
+.rh-s {
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  cursor: s-resize;
+}
+
+.rh-e {
+  right: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  cursor: e-resize;
+}
+
+.rh-w {
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  cursor: w-resize;
+}
+
+.rh-nw {
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  cursor: nw-resize;
+}
+
+.rh-ne {
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  cursor: ne-resize;
+}
+
+.rh-sw {
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  cursor: sw-resize;
+}
+
+.rh-se {
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  cursor: se-resize;
 }
 </style>
